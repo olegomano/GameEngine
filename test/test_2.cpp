@@ -1,6 +1,7 @@
 #include <iostream>
 #include "../src/rmanager.h"
 #include <string>
+#include <glm/glm.hpp>
 
 class TestClass{
 public:

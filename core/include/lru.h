@@ -11,7 +11,7 @@ public:
     LRU(){
 
     }
-
+    
     void push_back(const Key& k){
         if(!m_map.count(k)){
             auto block = m_list.push_front(k);
@@ -26,6 +26,7 @@ public:
     bool evict(Key& out){
         if(m_list.size() == 0) return false;
         m_list.pop_back(out);
+        m_map.erase(out);
         return true;
     }   
 

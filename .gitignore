@@ -53,3 +53,5 @@ vscode/*
 
 perf.data
 perf.data.old
+
+build/*
