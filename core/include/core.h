@@ -7,4 +7,5 @@
 #include "que.h"
 #include "collection.h"
 #include "log.h"
+#include "utils.h"
 #endif

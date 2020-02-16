@@ -34,6 +34,10 @@ void Context::addScripts(const std::vector<std::string>& scripts){
     }
 }
 
+void Context::addScript(const std::string& script){
+  m_luaScriptPaths.push_back(script);
+}
+
 void Context::loopForever(){
     while(m_running){
         m_glContext.clearFrame();
