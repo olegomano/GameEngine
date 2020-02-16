@@ -15,9 +15,9 @@ extern "C"{
 #include <vector>
 #include "vstack.h"
 #include "observable.h"
-
+#include "utils.h"
 #include <glm/glm.hpp>
-
+#include "file.h"
 
 namespace lua{
 
@@ -102,54 +102,69 @@ LuaRef create_table(Script* script, const T& data);
 
 class Script{
 public:
-    friend  LuaRef;
-    friend  std::ostream& operator<<(std::ostream& os, const Script& dt);
+  friend  LuaRef;
+  friend  std::ostream& operator<<(std::ostream& os, const Script& dt);
+  
+  enum Source{
+    FILE,
+    BUFFER
+  };
 
-    Script(const std::string& path):m_path(path){
-        m_allLuaRefs.reserve(1024);
-        m_refChildren.reserve(1024);
-        m_refNames.reserve(1024);
-    }
+  Script(const core::file::File& file) 
+  :m_source(FILE)
+  ,m_file(file)
+  ,m_buffer(nullptr)
+  ,m_bufferSize(-1)
+  {
+    m_allLuaRefs.reserve(1024);
+    m_refChildren.reserve(1024);
+    m_refNames.reserve(1024);
+  }
 
-    void registerFunction(const std::string& name, lua_CFunction function);
-    virtual bool load();
+  Script(const uint8_t* buffer, uint32_t len)
+  :m_source(BUFFER)
+  ,m_file(core::file::File())
+  ,m_buffer(buffer)
+  ,m_bufferSize(len) 
+  {
+    m_allLuaRefs.reserve(1024);
+    m_refChildren.reserve(1024);
+    m_refNames.reserve(1024);
+  }
 
-    template<typename T>
-    LuaRef createTable(const T& table,const std::string& name = "DYNAMIC_TABLE"){
-        return lua::create_table(this,table);
-    }
+  void registerFunction(const std::string& name, lua_CFunction function);
+  virtual bool load();
 
-    LuaRef operator[](const std::string& name){
-        return root()[name];
-    }
+  template<typename T>
+  LuaRef createTable(const T& table,const std::string& name = "DYNAMIC_TABLE"){
+    return lua::create_table(this,table);
+  }
 
-    LuaRef operator[](const uint32_t id){
-        return m_allLuaRefs[id];
-    }
+  inline LuaRef operator[](const std::string& name){return root()[name];}
+  inline LuaRef operator[](const uint32_t id){return m_allLuaRefs[id];}
+  inline LuaRef root(){return m_allLuaRefs[0];}
+  inline lua_State* luaState() const{ return m_lua;}
+  inline Source source() const {return m_source;}
 
-    LuaRef root(){
-        return m_allLuaRefs[0];
-    }
+  void addRef(const std::string& name,LuaRef& ref,uint32_t parentIndex = -1);
 
-    lua_State* luaState() const{
-        return m_lua;
-    }
-
-    void addRef(const std::string& name,LuaRef& ref,uint32_t parentIndex = -1);
-
-    virtual ~Script(){
+  virtual ~Script(){
     ///    lua_close(m_lua);
-    }
-
-protected:
-    void handleTable(const std::string& name,uint32_t parentIndex = -1);
-protected:
-    const std::string     m_path;
-    lua_State*            m_lua  = nullptr;
+  }
+private:
     
-    std::vector<LuaRef>                m_allLuaRefs;
-    std::vector<std::vector<uint32_t>> m_refChildren;
-    std::vector<std::string>           m_refNames;
+protected:
+  void handleTable(const std::string& name,uint32_t parentIndex = -1);
+protected:
+  lua_State*              m_lua  = nullptr;
+  core::file::File        m_file;
+  const uint8_t* const    m_buffer;
+  const uint32_t          m_bufferSize;
+  const Source            m_source;
+
+  std::vector<LuaRef>                m_allLuaRefs;
+  std::vector<std::vector<uint32_t>> m_refChildren;
+  std::vector<std::string>           m_refNames;
 };
 
 template<typename ...T>

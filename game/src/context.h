@@ -18,6 +18,7 @@ class Context{
 public:
     Context();
     void addScripts(const std::vector<std::string>& scripts);
+    void addScript(const std::string& script);
     void init();
     void setWindowParams(uint32_t w, uint32_t h, const std::string& name);
     void loopForever();

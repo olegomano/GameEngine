@@ -41,10 +41,26 @@ std::ostream& core::log::Console::error(){
 }
 
 
-std::ostream& cprint_error(){
-  return core::log::Console::instance().error();
+std::ostream& cprint_error(const std::string& id){
+  std::ostream& errorStream = core::log::Console::instance().error();
+  errorStream << "{" << id << "}: ";
+  return errorStream;
 }
 
-std::ostream& cprint_debug(){
-  return core::log::Console::instance().error();
+std::ostream& cprint_error(const std::string&& id){
+  std::ostream& errorStream = core::log::Console::instance().error();
+  errorStream << "{" << id << "}: ";
+  return errorStream;
+}
+
+std::ostream& cprint_debug(const std::string& id){
+  std::ostream& debugStream = core::log::Console::instance().debug();
+  debugStream << "{" << id << "}: "; 
+  return debugStream;
+}
+
+std::ostream& cprint_debug(const std::string&& id){
+  std::ostream& debugStream = core::log::Console::instance().debug();
+  debugStream << "{" << id << "}: "; 
+  return debugStream;
 }

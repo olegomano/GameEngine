@@ -69,15 +69,7 @@ public:
     /**
      *@size in bytes
      */
-    void update(uint8_t* data, uint32_t size){
-      std::string error = "";
-      glBindBuffer(GL_ARRAY_BUFFER, m_handle);
-      glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
-      _check_gl_error("Update Buffer",error);
-      if(error.size() > 0){
-          std::cout << " error updating VBO " << error << std::endl;
-      }
-    } 
+    void update(uint8_t* data, uint32_t size); 
   
     template<typename T>
     void create(const T& floats){

@@ -155,16 +155,40 @@ void lua::Script::addRef(const std::string& name,LuaRef& ref,uint32_t parentInde
 }
 
 bool lua::Script::load(){
-    m_lua = luaL_newstate();
-    luaL_openlibs(m_lua);    
-    int load_stat = luaL_dofile(m_lua,m_path.c_str());
-    if(load_stat == LUA_OK){
-        handleTable("ROOT",-1);
-        return true;
-    }
-    //std::cerr << lua_tostring(m_lua, -1) << std::endl;
-    cprint_error() << lua_tostring(m_lua,-1) << std::endl;
+  m_lua = luaL_newstate();
+  luaL_openlibs(m_lua);    
+  char*  buffer;
+  size_t len;
+  switch(m_source){
+    case FILE:
+      m_file.load(core::file::IFile::LAZY);
+      buffer = (char*) m_file.data();
+      len    = m_file.size();
+      cprint_debug("Lua") << "Loading Lua from File" << std::endl;
+      break;
+    case BUFFER:
+      buffer = (char*) m_buffer;
+      len    = m_bufferSize;
+      cprint_debug("Lua") << "Loading Lua from Buffer" << std::endl;;
+      break;
+  }
+ 
+  cprint_debug("Lua") << "Loading Buffer " <<  (void*)buffer << " length " << len << std::endl;
+  if(buffer == nullptr || len ==0 ){
     return false;
+  }
+
+
+  int error = luaL_loadbuffer(m_lua,buffer,len,"Line") || lua_pcall(m_lua,0,1,0);
+
+  if(error == LUA_OK){
+    handleTable("ROOT",-1);
+    return true;
+  }
+  //std::cerr << lua_tostring(m_lua, -1) << std::endl;
+  cprint_error() << lua_tostring(m_lua,-1) << std::endl;
+  
+  return false;
 }
 
 void lua::Script::registerFunction(const std::string& name,lua_CFunction function){
