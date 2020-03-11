@@ -1,7 +1,7 @@
 #ifndef _GL_RENDERER_H_
 #define _GL_RENDERER_H_
 #include <inttypes.h>
-
+#include "core.h"
 #include "utils.h"
 #include "shader.h"
 #include "transform.h"
@@ -52,7 +52,7 @@ public:
         int indx      = m_drawables.size();
         m_drawables.push_back(draw);
         
-        cprint_debug() << "Created Drawable " << m_drawables.size() << std::endl;
+        //cprint_debug() << "Created Drawable " << m_drawables.size() << std::endl;
         
         return m_drawables[indx];
     }
@@ -65,7 +65,6 @@ public:
     template<typename T>
     void updateDrawable(uint32_t index, const T& t){
         Drawable& d = m_drawables[index];
-
     }
 
     void deleteDrawable(uint32_t index){
@@ -77,8 +76,8 @@ public:
         return -1;
     }
 private:
-    ColorShader               m_shader;
-    std::vector<_T_drawable>  m_drawables; 
+    ColorShader                                 m_shader;
+    core::block_array::BlockArray<_T_drawable>  m_drawables; 
 };
 
 

@@ -192,6 +192,7 @@ bool lua::Script::load(){
 }
 
 void lua::Script::registerFunction(const std::string& name,lua_CFunction function){
-    lua_pushcfunction(m_lua, function);
-    lua_setglobal(m_lua, name.c_str());
+  //lua_pushcfunction(m_lua, function);
+  //lua_setglobal(m_lua, name.c_str());
+  lua_register(m_lua,name.c_str(),function);
 }

@@ -1,7 +1,17 @@
 
+
+local function Init()
+  createWindow("Window",400,400)
+  createWindow("Window 2",400,400)
+  createWindow("Window 3",400,400)
+  loadScript("/home/oleg/Documents/projects/galacoli/game/lua/game.lua")
+  loadScript("/home/oleg/Documents/projects/galacoli/game/lua/game2.lua")
+end
+
+local function Frame()
+end
+
 return {
-    width   = 1200,
-    height  = 800,
-    name    = "Game",
-    scripts = {"luascript.cpp","game.lua"}
+  init = Init,
+  frame = Frame
 }

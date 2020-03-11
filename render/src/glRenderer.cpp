@@ -7,6 +7,7 @@ void render::gl::Renderer<T>::init(){
     glBindVertexArray(vao);
     m_shader.compile();
     m_shader.enable();
+    m_drawables.reserve(1024*4);
 }
 
 template<typename T>

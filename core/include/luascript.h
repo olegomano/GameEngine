@@ -33,6 +33,14 @@ int push_struct(lua_State* lua, const T& data);
 template<typename T>
 void read_struct(lua_State* lua, T& out);
 
+template<typename T>
+void read_global(lua_State* lua,const std::string name, T& out){
+  lua_getglobal(lua,name.c_str());
+  read_struct(lua,out);
+  lua_pop(lua,1);
+}
+
+
 class LuaRef{
 friend  Node;
 friend  Script;
@@ -96,6 +104,7 @@ protected:
 };
 
 typedef std::variant<int,double,float,std::string> FlatTableItem;
+typedef std::map<std::string,FlatTableItem> FlatTable;
 template<typename T>
 LuaRef create_table(Script* script, const T& data);
 
@@ -138,6 +147,17 @@ public:
   template<typename T>
   LuaRef createTable(const T& table,const std::string& name = "DYNAMIC_TABLE"){
     return lua::create_table(this,table);
+  }
+  
+  template<typename T>
+  void createGlobal(const std::string& id, const T& data){
+    push_struct(m_lua,data);
+    lua_setglobal(m_lua,id.c_str());
+  }
+
+  template<typename T>
+  void readGlobal(const std::string& id, T& out){
+    lua::read_global(m_lua,id,out); 
   }
 
   inline LuaRef operator[](const std::string& name){return root()[name];}

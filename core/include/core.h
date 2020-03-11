@@ -5,6 +5,7 @@
 #include "vstack.h"
 #include "router.h"
 #include "que.h"
+#include "chunkArray.h"
 #include "collection.h"
 #include "log.h"
 #include "utils.h"

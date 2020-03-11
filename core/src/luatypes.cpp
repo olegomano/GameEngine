@@ -15,6 +15,18 @@ int lua::push_struct<uint32_t>(lua_State* lua, const uint32_t& data){
 }
 
 template<>
+int lua::push_struct<uint64_t>(lua_State* lua, const uint64_t& data){
+  lua_pushinteger(lua,data);
+  return lua::LuaRef::NUMBER;
+}
+
+template<>
+int lua::push_struct<long>(lua_State* lua, const long& data){
+  lua_pushinteger(lua,data);
+  return lua::LuaRef::NUMBER;
+}
+
+template<>
 int lua::push_struct<float>(lua_State* lua, const float& data){
     lua_pushnumber(lua,data);
     return lua::LuaRef::NUMBER;
@@ -115,7 +127,6 @@ lua::LuaRef lua::create_table(lua::Script* script, const std::map<std::string,lu
     LuaRef tableRef(luaTableRef,script,lua::LuaRef::TABLE);
     script->addRef("DYNAMIC_TABLE",tableRef);
 
-    std::cout << children.size() << std::endl;
 
     for(int i = 0; i < children.size(); i++){
         script->addRef(childNames[i],children[i],tableRef.ID());

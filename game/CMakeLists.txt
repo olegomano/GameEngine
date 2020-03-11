@@ -6,7 +6,7 @@ find_package(SDL2 REQUIRED)
 find_package(GLEW REQUIRED)
 
 
-add_executable(game main.cpp src/context.cpp src/config.cpp)
+add_executable(game main.cpp src/context.cpp src/config.cpp src/luaEntity.cpp)
 target_include_directories(game PRIVATE ${SDL2_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS})
 target_link_libraries(game ${SDL2_LIBRARIES} ${GLEW_LIBRARIES})
 target_link_libraries(game liblua)

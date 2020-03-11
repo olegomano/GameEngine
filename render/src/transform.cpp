@@ -17,6 +17,32 @@ void Transform::setPosition(float x, float y, float z){
    m_transform[3][2] = z;
 }
 
+void Transform::setPositionX(float x){
+  m_transform[3][0] = x;
+}
+
+void Transform::setPositionY(float y){
+  m_transform[3][1] = y;
+}
+
+void Transform::setPositionZ(float z){
+  m_transform[3][2] = z;
+}
+
+float Transform::positionX() const{
+  return m_transform[3][0];
+}
+
+float Transform::positionY() const{
+  return m_transform[3][1];
+}
+
+float Transform::positionZ() const{
+  return m_transform[3][2];
+}
+
+
+
 void Transform::scale(float xyz){
     for(int x = 0; x < 3; x++){
         for(int y = 0; y < 3; y++){

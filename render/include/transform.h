@@ -13,6 +13,13 @@ public:
     inline void setPosition(const glm::vec4& v);
     inline void setPosition(const glm::vec3& v);
     void setPosition(float x, float y, float z);
+    void setPositionX(float x);
+    void setPositionY(float y);
+    void setPositionZ(float z);
+    
+    float positionX() const;
+    float positionY() const;
+    float positionZ() const;
 
     void scale(float xyz);
     inline void scale(float x, float y, float z);
