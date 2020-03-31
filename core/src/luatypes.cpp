@@ -100,6 +100,32 @@ void lua::read_struct<std::vector<std::string>>(lua_State* lua, std::vector<std:
 }
 
 template<>
+void lua::read_struct<lua::FlatTable>(lua_State* lua, lua::FlatTable& out){
+  lua_pushnil(lua);
+  while(lua_next(lua,-2)){
+    int valueType = lua_type(lua,-1);
+    std::string keyName = lua_tostring(lua,-2);
+
+    switch(valueType){
+    case LUA_TFUNCTION:
+      break;
+    case LUA_TSTRING:
+      out[keyName] = lua_tostring(lua,-1);
+      break;
+    case LUA_TNUMBER:
+      out[keyName] = lua_tonumber(lua,-1);
+      break;
+    case LUA_TBOOLEAN:
+      break;
+    default:
+      break;
+    }
+    lua_pop(lua,1);
+  }
+  lua_pop(lua,1);
+}
+
+template<>
 lua::LuaRef lua::create_table(lua::Script* script, const std::map<std::string,lua::FlatTableItem>& data){
     lua_createtable(script->luaState(),0,data.size());
     int luaTableRef = luaL_ref(script->luaState(), LUA_REGISTRYINDEX);

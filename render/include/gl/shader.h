@@ -5,8 +5,8 @@
 #include <string>
 #include <initializer_list>
 #include <vector>
-#include "transform.h"
-#include "vbo.h"
+#include "../transform.h"
+#include "buffer.h"
 #include <core.h>
 
 class Shader{
@@ -26,7 +26,7 @@ protected:
     
     template<int ELEMENTS>
     bool setAttribute(GLuint attribute, const render::gl::VBOAttrib& attrib, std::string& error){
-        glBindBuffer(GL_ARRAY_BUFFER, attrib.owner()->handle());
+        glBindBuffer(GL_ARRAY_BUFFER, attrib.ownerVBO()->handle());
         _check_gl_error("Failed to bind buffer ",error);
         glVertexAttribPointer(attribute, ELEMENTS, GL_FLOAT, GL_FALSE, attrib.stride(), (void*)attrib.offset());
         return _check_gl_error("Failed to set attribute ",error);

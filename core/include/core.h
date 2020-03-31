@@ -2,6 +2,7 @@
 #define _CORE_H_
 #include "linkedlist.h"
 #include "luascript.h"
+#include "luaContext.h"
 #include "vstack.h"
 #include "router.h"
 #include "que.h"

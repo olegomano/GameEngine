@@ -18,9 +18,50 @@ extern "C"{
 #include "utils.h"
 #include <glm/glm.hpp>
 #include "file.h"
+namespace lua{
+  typedef std::variant<double,std::string> _V_FlatTableItem; 
+  class FlatTableItem : public _V_FlatTableItem{
+  public:
+    using _V_FlatTableItem::_V_FlatTableItem;
+    using _V_FlatTableItem::operator=;
+    operator int(){
+      return std::get<double>(*this);
+    }
+
+    operator uint64_t(){
+      return std::get<double>(*this);
+    }
+
+    operator uint32_t(){
+      return std::get<double>(*this);
+    }
+
+    operator double(){
+      return std::get<double>(*this);
+    }
+
+    operator float(){
+      return std::get<double>(*this);
+    }
+
+    operator std::string(){
+      return std::get<std::string>(*this);
+    }
+  };
+}
+
+namespace std{
+  template<>
+  struct variant_size<lua::FlatTableItem> : variant_size<lua::_V_FlatTableItem>{};
+
+  template<size_t I>
+  struct variant_alternative<I,lua::FlatTableItem> : variant_alternative<I,lua::_V_FlatTableItem>{};
+};
+
 
 namespace lua{
 
+typedef std::map<std::string,FlatTableItem> FlatTable;
 void stackDump (lua_State *L);
 
 
@@ -103,11 +144,9 @@ protected:
     uint32_t   parentId = -1;
 };
 
-typedef std::variant<int,double,float,std::string> FlatTableItem;
-typedef std::map<std::string,FlatTableItem> FlatTable;
+
 template<typename T>
 LuaRef create_table(Script* script, const T& data);
-
 
 class Script{
 public:

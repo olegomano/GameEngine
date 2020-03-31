@@ -20,6 +20,20 @@ lua::LuaRef lua::create_table<Drawable>(lua::Script* s, const Drawable& d){
 }
 
 template<>
+int lua::push_struct<Drawable>(lua_State* lua, const Drawable& d){
+  lua_pushstring(lua,Drawable::LuaX);
+  lua_pushnumber(lua,d.position.positionX());
+  lua_settable(lua,-3);
+  lua_pushstring(lua,Drawable::LuaY);
+  lua_pushnumber(lua,d.position.positionY());
+  lua_settable(lua,-3);
+  lua_pushstring(lua,Drawable::LuaZ);
+  lua_pushnumber(lua,d.position.positionZ());
+  lua_settable(lua,-3);
+  return lua::LuaRef::Type::TABLE;
+}
+
+template<>
 void lua::read_struct<Drawable>(lua_State* lua, Drawable& out){ 
   lua_pushnil(lua);
   while(lua_next(lua,-2)){
@@ -41,6 +55,7 @@ void lua::read_struct<Drawable>(lua_State* lua, Drawable& out){
     }
     lua_pop(lua,1);
   }
+  lua_pop(lua,1);
 }
 
 

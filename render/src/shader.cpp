@@ -1,5 +1,5 @@
-#include "../include/shader.h"
-#include "../include/utils.h"
+#include "../include/gl/shader.h"
+#include "../include/gl/utils.h"
 #include <vector>
 #include <glm/glm.hpp>
 

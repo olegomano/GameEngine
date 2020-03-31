@@ -1,6 +1,7 @@
 #include "context.h"
 #include <log.h>
 #include "luaApi.h"
+#include <chrono>
 #define LOG_TAG "Context"
 
 Context::Context(){
@@ -9,6 +10,13 @@ Context::Context(){
 
 void Context::init(){
   m_glContext.init();
+  m_luaContext.init(0);
+  int fcount = sizeof(LuaApi)/sizeof(Lua_ApiCall); 
+  for(int i =0 ; i < fcount ; i++){
+    cprint_debug(LOG_TAG) << "Registering Function " << LuaApi[i].name << std::endl;
+    m_luaContext.registerFunction(LuaApi[i].name,LuaApi[i].call);
+  }
+  m_luaContext.createGlobal("_SCRIPT",(void*)this);
 }
 
 
@@ -17,66 +25,54 @@ void Context::onGLContextInit(){
   m_renderer.init(); 
 }
 
-void Context::loadScript(const std::string& name){
+void Context::loadLua(const std::string& name){
   cprint_debug(LOG_TAG) << "Loading Script " << name << std::endl;
-  lua::Script* script= new lua::Script(name);
-  if(script->load()){
-    script->createGlobal("_ID",m_scripts.size()); 
-    script->createGlobal("_SCRIPT",(void*)this);
-    m_scripts.push_back(script);
-     
-    int apiFunctions = sizeof(LuaApi) / sizeof(Lua_ApiCall);
-    for(int i = 0; i < apiFunctions; i++){
-      const Lua_ApiCall& apiCall = LuaApi[i];
-      cprint_debug("Context") << "Registering Api call " << apiCall.name << " " << std::endl; 
-      script->registerFunction(std::string(apiCall.name),*apiCall.call);
-    }
-    cprint_debug(LOG_TAG) << *script << std::endl; 
-    EntityScript se;
-    se.load(script->root());
-    se.onInit();
-    m_entities.push_back(se);
-  }else{
-    cprint_error(LOG_TAG) << "Error loading script " << name << std::endl;
-  }
+  m_tasks.push_back([=](){
+    core::file::File f = core::file::File(name);
+    f.load();
+    this->m_luaContext.loadBuffer(f.data(),f.size());    
+  });
 }
 
-void Context::addComponent(GameComponent& gc){
-  m_gameComponents.push_back(gc);
-}
-
-lua::Script* Context::getScriptById(uint32_t id){
-  return m_scripts[id];
+void Context::loadLua(const uint8_t* data,uint32_t len){
+  m_tasks.push_back([=](){
+    cprint_debug(LOG_TAG) << "Loading Buffer " << (void*) data << " " << len << std::endl;
+    this->m_luaContext.loadBuffer(data,len,cprint_debug("Lua"));    
+  });
 }
 
 void Context::createWindow(const std::string& name, uint32_t w, uint32_t h){
-  m_windows.push_back(m_glContext.createWindow(name,w,h));
+  const std::string cname = name;
+  std::cout << "push_back create window 0" << std::endl;
+  cprint_debug(LOG_TAG) << "Creating Window " << cname << "(" << w << "," << h << ")" << std::endl;
+  m_tasks.push_back([cname,w,h,this](){
+      cprint_debug(LOG_TAG) << "Creating Window " << cname << "(" << w << "," << h << ")" << std::endl;
+      this->m_windows.push_back(m_glContext.createWindow(cname,w,h));
+  });
+  std::cout << "push_back create window 1" << std::endl;
 }
 
 void Context::loopForever(){
-    while(m_running){
+    while(m_running){        
+      m_tasks.run();  
+      m_glContext.checkInput([this](const uint8_t* keys,double x, double y){
         
-        m_glContext.checkInput([this](const uint8_t* keys,double x, double y){
-           if(keys[SDL_SCANCODE_Q]){
-            m_running = false;
-          }
-        });
-        for(auto& e : m_entities){
-          e.onFrame();
-        }
+      });
         //for(auto s : m_scripts){
         //  lua::stackDump(s->luaState());
         //}
-        for(int i = 0; i < m_gameComponents.size() ; i++){
-          m_gameComponents[i].readLua();
-        }
-
-        for(int i = 0; i < m_windows.size(); i++){
-          m_windows[i]->startDraw();
-          m_windows[i]->clear();
-          m_renderer.render(glm::mat4(1));
-          m_windows[i]->show();
-        }
+      for(auto& luaObjectVariant : m_mappedLuaObjects){
+        std::visit([](auto&& mappedObject){
+          mappedObject.read();
+        },luaObjectVariant);
+      }
+      for(int i = 0; i < m_windows.size(); i++){
+        m_windows[i]->startDraw();
+        m_windows[i]->clear();
+        m_renderer.render(glm::mat4(1));
+        m_windows[i]->show();
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
 }
 

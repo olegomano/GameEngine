@@ -4,12 +4,13 @@ project(Game)
 
 find_package(SDL2 REQUIRED)
 find_package(GLEW REQUIRED)
+find_package(Threads REQUIRED)
 
-
-add_executable(game main.cpp src/context.cpp src/config.cpp src/luaEntity.cpp)
+add_executable(game main.cpp src/context.cpp)
 target_include_directories(game PRIVATE ${SDL2_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS})
 target_link_libraries(game ${SDL2_LIBRARIES} ${GLEW_LIBRARIES})
 target_link_libraries(game liblua)
 target_link_libraries(game core)
 target_link_libraries(game renderer)
+target_link_libraries(game Threads::Threads)
 target_compile_options(game PRIVATE ${COMPILE_FLAGS})
