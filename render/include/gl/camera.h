@@ -12,6 +12,14 @@ protected:
   void create() override {
 
   }
+
+  void blitToScreen() override {
+  
+  }
+
+  void bind() override {
+  
+  }
 private:
   //GLTexture m_renderTexture;
   //Framebuffer m_framebuffer; 

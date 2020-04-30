@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include <iostream>
 
+
 class Transform{
 friend std::ostream& operator<<(std::ostream& out, const Transform& trans);
 public:
@@ -32,13 +33,10 @@ public:
     inline void undo(glm::mat4& out);
 
     inline glm::mat4 transform() const {return m_transform;}
-    inline glm::mat4 inverse() const {return m_inverse;}
-
     Transform& operator = (const glm::mat4 mat);
 
 private:
     glm::mat4 m_transform = glm::mat4(1);
-    glm::mat4 m_inverse   = glm::mat4(1);
 };
 
 #endif

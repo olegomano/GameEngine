@@ -1,7 +1,6 @@
 #ifndef _TYPES_H_
 #define _TYPES_H_
 #include "core.h"
-#include "renderer.h"
 #include <vector>
 #include <variant>
 
@@ -10,9 +9,9 @@
 //IPtr -> Ptr<T>
 class Drawable {
 public:
-  static constexpr char* LuaX = "x";
-  static constexpr char* LuaY = "y";
-  static constexpr char* LuaZ = "z";
+  static constexpr const char* const LuaX = "x";
+  static constexpr const char* const LuaY = "y";
+  static constexpr const char* const LuaZ = "z";
 };
 
 

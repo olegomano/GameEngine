@@ -5,11 +5,15 @@
 #define LOG_TAG "Context"
 
 Context::Context(){
-  m_glContext.setContextCallback(std::bind(&Context::onGLContextInit,this));
+  //m_glContext.setContextCallback(std::bind(&Context::onGLContextInit,this));
 }
 
 void Context::init(){
-  m_glContext.init();
+  m_windowManager.create(SDLWindowManager::Backend::GL);
+  m_windowManager.addWindow("Game",800,600);
+  m_glRenderContext = new render::gl::GLContext();
+  m_glRenderContext->create();
+
   m_luaContext.init(0);
   int fcount = sizeof(LuaApi)/sizeof(Lua_ApiCall); 
   for(int i =0 ; i < fcount ; i++){
@@ -21,8 +25,7 @@ void Context::init(){
 
 
 void Context::onGLContextInit(){
-  m_primitives.init();
-  m_renderer.init(); 
+
 }
 
 void Context::loadLua(const std::string& name){
@@ -42,6 +45,8 @@ void Context::loadLua(const uint8_t* data,uint32_t len){
 }
 
 void Context::createWindow(const std::string& name, uint32_t w, uint32_t h){
+  
+  /**
   const std::string cname = name;
   std::cout << "push_back create window 0" << std::endl;
   cprint_debug(LOG_TAG) << "Creating Window " << cname << "(" << w << "," << h << ")" << std::endl;
@@ -50,30 +55,25 @@ void Context::createWindow(const std::string& name, uint32_t w, uint32_t h){
       this->m_windows.push_back(m_glContext.createWindow(cname,w,h));
   });
   std::cout << "push_back create window 1" << std::endl;
+  **/  
 }
 
 void Context::loopForever(){
     while(m_running){        
       m_tasks.run();  
-      m_glContext.checkInput([this](const uint8_t* keys,double x, double y){
-        
-      });
-        //for(auto s : m_scripts){
-        //  lua::stackDump(s->luaState());
-        //}
       for(auto& luaObjectVariant : m_mappedLuaObjects){
         std::visit([](auto&& mappedObject){
           mappedObject.read();
         },luaObjectVariant);
-      }
-      for(int i = 0; i < m_windows.size(); i++){
-        m_windows[i]->startDraw();
-        m_windows[i]->clear();
-        m_renderer.render(glm::mat4(1));
-        m_windows[i]->show();
-      }
-      std::this_thread::sleep_for(std::chrono::milliseconds(16));
+
+        for(auto& window : m_windowManager.windows()){
+          window->beginDraw(); 
+          m_glRenderContext->render();
+          window->endDraw();
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(16));
     }
+  }
 }
 
 void Context::stopLooping(){

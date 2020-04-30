@@ -16,46 +16,15 @@ namespace gl{
 class VBOAttrib;
 
 class VBO : public render::IBuffer{
-  public:
-  void create(uint32_t size) override{
-    std::string error = "";          
-    if(m_handle != -1) destroy();
-    glGenBuffers(1,&m_handle);
-    _check_gl_error("Gen Buffers",error);
-    if(error.size() > 0){
-      std::cout << " error creating VBO " << error << std::endl;
-      return;
-    }
-    write(nullptr,size);
-  }
-  
-  void write(uint8_t* buffer, uint32_t count) override{
-    glBindBuffer(GL_ARRAY_BUFFER,m_handle);
-    glBufferData(GL_ARRAY_BUFFER,count,buffer,GL_STATIC_DRAW);
-  }
-  
-  void write(uint8_t* buffer, uint32_t offset,uint32_t count) override{
-    std::cout << "Warning calling unimplemented function write(buffer,offset,count) " << std::endl;
-  }
+public:
+  void create(uint32_t size) override; 
+  void write(uint8_t* buffer, uint32_t count) override; 
+  void write(uint8_t* buffer, uint32_t offset,uint32_t count) override;
+  void* map();
+  void unmap();
+  void destroy();
 
-   
-
-  void* map(){
-    glBindBuffer(GL_ARRAY_BUFFER, m_handle);
-    return glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-  }
-
-  void unmap(){
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-  }
-
-  void destroy(){
-    std::cout << "Destroying VBO" << std::endl;
-  }
-
-  inline GLuint handle() const {
-    return m_handle;
-  }
+  inline GLuint handle() const {return m_handle;}
   
   VBOAttrib createAttrib(uint32_t count,uint32_t offset, uint32_t stride);
 private:
@@ -104,9 +73,4 @@ private:
 
 };
 };
-
-render::gl::VBOAttrib render::gl::VBO::createAttrib(uint32_t count,uint32_t offset, uint32_t stride){
-  return render::gl::VBOAttrib(this,offset,stride,count);
-}
-
 #endif

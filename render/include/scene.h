@@ -2,155 +2,185 @@
 #define _RENDER_SCENE_H_
 #include <unordered_map>
 #include "transform.h"
-
+#include "core.h"
 
 namespace render{
+namespace scene{
 
-class IAbstractScene{
-public:
-  enum Object : uint32_t{
-    Drawable = 1,
-    Camera
-  }
-  virtual void* getCameraAbstract(uint64_t id) = 0;
-  virtual void* getDrawableAbstract(uint64_t id) = 0;
-  virtual void* getObjectAbstract(uint64_t id) = 0;
+class IAbstractScene;
+
+enum Component : uint32_t{
+  Drawable = 1,
+  Camera = 1<<1,
+  Transform = 1<<2
+};
+std::ostream& operator << (std::ostream& out, const Component& c);
+
+struct SiblingTable{
+  uint32_t componentIndex[32];
 };
 
-template<typename _T_Drawable>
-class IScene : public IAbstractScene{
-public:
- void* getCameraAbstract(uint64_t id) override{
-    return &getCamera(id);
+struct IComponentArray{
+  std::vector<uint64_t> globalIds;
+  std::vector<::Transform> transforms;
+    
+  uint32_t size() const {
+    return globalIds.size();
   }
-  
-  void* getDrawableAbstract(uint64_t id) override{
-    return &getDrawable(id);
-  }
-
-  void* getObjectAbstract(uint64_t id) override{
-    IAbstractScene::Object obj = objectFromId(id);
-    uint32_t indx = indexFromId(id);
-    switch(obj){
-      case IAbstractScene::Object::Drawable:
-        return getDrawableAbstract(indx);
-      case IAbstractScene::Object::Camera:
-        return getCameraAbstract(indx);
-      default:
-        return nullptr;
-    }
-  }
-  
-  SceneObject<ICamera> createCamera(){
-    uint32_t indx = makeCamera();
-    uint64_t id = newId(IAbstractScene::Object::Drawable);
-    m_cameraMap[id] = indx;
-    return SceneObject<ICamera>(*this,id);
-  
-  }
-
-  
-  SceneObject<_T_Drawable> createDrawable(const _T_Drawable& t){
-    uint32_t indx = makeDrawable();
-    _T_Drawable& d = getDrawableImpl(indx);
-    d = t;
-    uint64_t id = newId(IAbstractScene::Object::Drawable);
-    m_drawableMap[id] = indx;
-    return SceneObject<_T_Drawable>(*this,id);
-  }
-
-  ICamera& getCamera(uint64_t cameraId){
-    uint32_t indx = m_cameraMap[cameraId];
-    return getCameraImpl(indx);
-  }
-
-  _T_Drawable& getDrawable(uint64_t drawableId){
-    uint32_t indx = m_drawableMap[drawableId];
-    return getDrawableImpl(drawableId);
-  }
-protected:
-  virtual uint32_t     makeCamera() = 0;
-  virtual uint32_t     makeDrawable() = 0;
-  virtual ICamera&     getCameraImpl(uint32_t indx) = 0;
-  virtual _T_Drawable& getDrawableImpl(uint32_t indx) = 0;
-private:
-  uint64_t newId(IAbstractScene::Object obj){
-    uint64_t id = m_id++;
-    id |= (obj << 32);
-    return id;
-  }
-
-  IAbstractScene::Object objectFromId(uint64_t id){
-    IAbstractScene::Object obj = id >> 32;
-    return obj;
-  }
-
-  uint32_t indexFromId(uint64_t id){
-    return (uint32_t)(id&0xFFFFFFFF);
-  }
-
-private:
-  std::unordered_map<uint32_t,uint32_t> m_cameraMap;
-  std::unordered_map<uint32_t,uint32_t> m_drawableMap;
-  uint32_t m_id = 0;
 };
 
 
 template<typename T>
-class SceneObject{
-public:
-  SceneObject(IAbstractScene& sc,uint64_t indx) : m_scene(sc),m_index(indx){
-  
+struct ComponentArray : public IComponentArray{
+  std::vector<T> components;
+  SceneHook<T>* hook = nullptr;
+
+  T& operator[](uint32_t instanceIndex){
+    return components[instanceIndex];
   }
 
-  T& object(){
-    return *((T*)m_scene.getAbstractObject(m_index));
-  }
-  
-  T* operator->(){
-    &object();
-  }
-  
-  Transform transform(){
-    return m_transform;
-  }
-
-private:
-  uint64_t m_index;
-  IAbstractScene& m_scene;
-  Transform m_transform;
+  void push_back(uint64_t globalId,const T& t){
+    this->globalIds.push_back(globalId);
+    this->components.push_back(t);
+    this->transforms.push_back(::Transform());
+    this->siblingComponents.push_back({});
+  } 
 };
 
+
+uint32_t entityIdFromGlobalId(uint64_t id);
+bool globalIdHasComponent(uint64_t globalId, Component c);
+uint8_t componentIndex(Component c);
+
+class Entity{
+public:
+  friend IAbstractScene;
+  Entity(uint64_t globalId,IAbstractScene* owner);
+  Entity(const Entity& other);
+  Entity& operator=(const Entity& other);
+
+  template<typename T>
+  T& getComponent();
+  bool hasComponent(Component c);
+  uint32_t entityId();
+  void addTag(const std::string& t){}
+
+private:
+  Entity();
+
+  uint64_t m_globalId;
+  IAbstractScene* m_owner;
+};
+
+class IAbstractScene{
+public:
+  /**
+   *allocates an instance of this component Type
+   *returns the instanceId
+   */
+  virtual uint32_t createComponentInstance(uint32_t entityId,Component c) = 0;
+  
+  /*
+   *returns a pointer to the instance of the component at 
+   */
+  virtual void* getComponentInstance(uint32_t entityId, Component c) = 0;
+  
+  /**
+   *calculates the global position of all transforms
+   */
+  virtual void calculateTransformGlobals(){};
+
+  /**
+   *create an entity that contains componentList components
+   */
+  template<typename T>
+  Entity createEntity(const T& componentList){
+    uint32_t entityId = ++m_entityId;
+    uint64_t guid = entityId;
+    cprint_debug("Scene") << "Creating new Entity " << entityId << std::endl;
+    for(const Component& c : componentList){
+      uint32_t instanceId = createComponentInstance(entityId,c);
+      if(instanceId == -1){
+        cprint_error("Scene") << "Failed to create component " << c << std::endl;
+        continue;
+      }
+      m_componentMap[c][entityId] = instanceId;
+      guid |= ((uint64_t)(c) << 32);
+    }
+    m_allEntities.push_back(Entity(guid,this));
+    return Entity(guid,this);
+  }
+  /**
+   * returns all entityId that contain the following component
+   */
+  auto& entityFilter(Component c); 
+  
+  /**
+   * returns true if the given entityId has a component of type c allocated
+   */
+  bool componentInstanceExists(uint32_t entityId,Component c);
+  
+  /**
+   * returns the instance Id of the component for this entity
+   */
+  uint32_t componentInstanceId(uint32_t entityId, Component c);
+    
+protected:
+  uint32_t m_entityId = 0;
+  std::unordered_map<Component,std::unordered_map<uint32_t,uint32_t>> m_componentMap;
+  std::unordered_map<std::string,std::vector<uint64_t>> m_entityTags;
+  std::vector<Entity> m_allEntities;
+};
+
+
+template<typename T>
+class SceneHook{
+public:
+  virtual void onCreated(T& t);
+  virtual void onDeleted(T& t);
+};
 
 template<typename _T_Context>
-class Scene : public IScene<typename _T_Context::Drawable>{
-public: 
-  uint32_t     makeCamera(){
-    typename _T_Context::Camera camera;
-    m_cameras.push_back(camera);
-    return m_cameras.size() -1;
-  };
+class Scene : public IAbstractScene{
+public:
+  uint32_t createComponentInstance(uint32_t entityId, Component c) override;
+  void* getComponentInstance(uint32_t entityId, Component c) override; 
 
-  uint32_t     makeDrawable(){
-    typename _T_Context::Drawable d;
-    m_drawables.push_back(d);
-    return m_drawables.size() - 1;
-   
-  };
+  template<typename T,Component TYPE>
+  void setHook(SceneHook<T>* hook){
+    if constexpr (TYPE == Camera){
+      m_cameras.hook = hook;
+    }
+    if constexpr (TYPE == Drawable){
+      m_drawables.hook = hook;
+    }
+    static_assert(true,"");
+  }
 
-  ICamera&     getCameraImpl(uint32_t indx){
-    return m_cameras[indx];
-  };
+  template<Component C>
+  auto& componentsOfType(){
+    if constexpr (C == Transform){
+      return m_transforms;
+    }
+    if constexpr (C == Camera){
+      return m_cameras; 
+    }
+    if constexpr(C == Drawable){
+      return m_drawables;
+    }
+    return {};
+  }
 
-  typename _T_Context::Drawable& getDrawableImpl(uint32_t indx){
-    return m_drawables[indx];
-  };
-p
 private:
-  std::vector<typename _T_Context::Camera> m_cameras;
-  std::vector<typename _T_Context::Drawable> m_drawables;
+  
+  ComponentArray<typename _T_Context::Camera>   m_cameras;
+  ComponentArray<typename _T_Context::Drawable> m_drawables;
+  SceneGraph m_sceneGraph;
+  std::vector<IComponentArray*> m_components;
 };
 
+#include "scene.hpp"
 
+}//namespace scene
 };
 #endif

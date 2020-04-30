@@ -1,19 +1,92 @@
 #ifndef _CORE_LUA_CONTEXT_H_
 #define _CORE_LUA_CONTEXT_H_
-#include "luascript.h"
+#include <variant>
+#include <map>
 #include "log.h"
 #include <cinttypes>
 #include <string>
 #include <vector>
+#include <assert.h>
 extern "C"{
     #include <lua.h>
     #include <lualib.h>
     #include <lauxlib.h>
 }
+
+namespace lua{
+
+typedef std::variant<double,std::string> _V_FlatTableItem; 
+class FlatTableItem : public _V_FlatTableItem{
+public:
+  using _V_FlatTableItem::_V_FlatTableItem;
+  using _V_FlatTableItem::operator=;
+  operator int(){
+    return std::get<double>(*this);
+  }
+
+  operator uint64_t(){
+    return std::get<double>(*this);
+  }
+
+  operator uint32_t(){
+    return std::get<double>(*this);
+  }
+
+  operator double(){
+    return std::get<double>(*this);
+  }
+
+  operator float(){
+    return std::get<double>(*this);
+  }
+
+  operator std::string(){
+    return std::get<std::string>(*this);
+  }
+};
+
+void stackDump (lua_State *L);
+typedef std::map<std::string,FlatTableItem> FlatTable;
+
+template<typename T>
+int push_struct(lua_State* lua, const T& data);
+
+template<typename T>
+void read_struct(lua_State* lua, T& out);
+
+template<typename T>
+void set_table_item(lua_State* lua, const std::string& name, const T& value){
+  push_struct(lua,name);
+  push_struct(lua,value);
+  lua_settable(lua,-3);
+}
+
+template<typename T>
+void read_global(lua_State* lua,const std::string name, T& out){
+  lua_getglobal(lua,name.c_str());
+  read_struct(lua,out);
+  lua_pop(lua,1);
+}
+
+} //NAMESPACE lua
+
+namespace std{
+  template<>
+  struct variant_size<lua::FlatTableItem> : variant_size<lua::_V_FlatTableItem>{};
+
+  template<size_t I>
+  struct variant_alternative<I,lua::FlatTableItem> : variant_alternative<I,lua::_V_FlatTableItem>{};
+};
+
+
+
 namespace lua{
 class LuaContext;
 
 #define LOG_TAG "LuaContext"
+
+
+
 class LuaVar{
 public:
   friend std::ostream& operator<<(std::ostream& out, const LuaVar& var){
@@ -93,6 +166,7 @@ public:
 
   template<typename T>
   void createGlobal(const std::string& name, const T& value);
+ 
   template<typename T>
   void readGlobal(const std::string& name, T& out);
 
@@ -138,22 +212,12 @@ private:
 };
 
 template<typename T>
-void LuaContext::createGlobal(const std::string& name, const T& value){
-  push_struct(m_lua,value);
-  lua_setglobal(m_lua,name.c_str());
-}
-
-template<typename T>
-void LuaContext::readGlobal(const std::string& name, T& out){
-  read_global(m_lua,name,out);
-}
-
-template<typename T>
 LuaVar LuaContext::createVar(const T& out){
   LuaVar var = declareVar();
   writeVar(var,out);
   return var;
 }
+
 
 template<typename T>
 void LuaContext::readVar(LuaVar var,T& out){  
@@ -164,14 +228,22 @@ void LuaContext::readVar(LuaVar var,T& out){
 
 template<typename T>
 void LuaContext::writeVar(LuaVar var, const T& data){
-  cprint_debug(LOG_TAG) << "writeVar " << std::endl;
-  stackDump(m_lua);
   loadVar(var);
-  stackDump(m_lua);
   lua::push_struct(m_lua,data);
-  stackDump(m_lua);
   lua_pop(m_lua,1);
 }
+
+template<typename T>
+void LuaContext::createGlobal(const std::string& name, const T& value){
+  push_struct(m_lua,value);
+  lua_setglobal(m_lua,name.c_str());
+}
+
+template<typename T>
+void LuaContext::readGlobal(const std::string& name, T& out){
+  read_global(m_lua,name,out);
+}
+
 
 
 template<typename T>

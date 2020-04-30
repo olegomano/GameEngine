@@ -22,7 +22,7 @@ public:
   }
 
   template<typename T>
-  void update(const T& floats){
+  void updateImm(const T& floats){
     float* data = new float[floats.size()];
     int count = 0;
     for(float f : floats){

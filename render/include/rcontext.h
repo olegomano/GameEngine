@@ -3,15 +3,18 @@
 #include "scene.h"
 #include "primitives.h"
 
+#include <initializer_list>
+
 namespace render{
 
 
-template<typename _T_Drawable>
 class IRenderContext{
-  virtual void init() = 0;
+  virtual void create() = 0;
   virtual void render() = 0;
-  virtual IScene& scene() = 0;
-  virtual IPrimitives<_T_Drawable>& primitives() = 0;
+  virtual scene::IAbstractScene& scene() = 0;
+  virtual scene::Entity createCamera() = 0;
+  //virtual void createPrimitive() = 0;
+//virtual void createColladaAsset() = 0;
 };
 
 template<
@@ -21,24 +24,21 @@ template<
   typename _T_Renderer,
   typename _T_Drawable
   >
-class RenderContext : public IRenderContext<_T_Drawable>{
-  typedef _T_Texture  Texture;
-  typedef _T_Camera   Camera;
-  typedef _T_Buffer   Buffer;
+class RenderContext : public IRenderContext{
+public:
+  typedef _T_Texture Texture;
+  typedef _T_Camera Camera;
+  typedef _T_Buffer Buffer;
   typedef _T_Renderer Renderer;
+  typedef _T_Drawable Drawable;
   typedef RenderContext<_T_Texture,_T_Camera,_T_Buffer,_T_Renderer,_T_Drawable> Context;
 
 public:
-  virtual void init() override{
-    m_primitives.init();
-    m_renerer.init();
-  }
+  RenderContext(){}
 
-  IPrimitives<_T_Drawable> primitives() override{
-    return m_primitives;
-  }
+  virtual void create() = 0;
 
-  IScene<_T_Drawable>& scene() override {
+  scene::IAbstractScene& scene() override {
     return m_scene;
   }
 
@@ -46,10 +46,16 @@ public:
     m_renderer.draw(m_scene);
   }
 
-private:
-  render::Primitives<Context> m_primitives;
-  render::Scene<Context> m_scene;
-  _T_Renderer            m_renderer;
+  scene::Entity createCamera() override {
+    std::initializer_list<scene::Component> components = {scene::Camera,scene::Transform};
+    scene::Entity e = m_scene.createEntity(components);
+    return e;
+  }
+
+protected:
+  primitive::Primitives<Context> m_primitives;
+  scene::Scene<Context> m_scene;
+  _T_Renderer    m_renderer;
 };
 
 }

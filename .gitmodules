@@ -4,3 +4,6 @@
 [submodule "lua"]
 	path = lua
 	url = https://github.com/lua/lua
+[submodule "network/engproto"]
+	path = network/engproto
+	url = git@github.com:polinomov/engproto.git

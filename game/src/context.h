@@ -7,26 +7,35 @@
 #include <atomic>
 #include <functional>
 
-#include "renderer.h"
 #include "primitives.h"
 #include "core.h"
-#include "sdlGL.h"
+#include "sdlwindow.h"
 #include "types.h"
 #include "../../render/include/gl/glcontext.h"
 
 
 class Context{
 public: 
-  typedef std::variant<lua::MappedObject<Drawable>>   SupportedComponents;
-  typedef std::variant<int,float>                     Event;
-  typedef std::function<void(const Event&)>           EventCallback;
+  typedef std::variant<lua::MappedObject<int>>   SupportedComponents;
+  typedef std::variant<int,float>                Event;
+  typedef std::function<void(const Event&)>      EventCallback;
  
   Context();
-  void init();
   void loopForever();
   void stopLooping();
- 
+  
+  /**
+   * Initializes the context, can be called after loopForever
+   * will create a window and a render context
+   */
+  void init();
+  
+  /**
+   * creates a new Window with name and dimentions
+   *
+   */
   void createWindow(const std::string& name, uint32_t w, uint32_t h);
+  
   /*
    * Loads and executes a file containing a lua script
    * Can be called from any thread
@@ -34,6 +43,7 @@ public:
       path to the file
    */
   void loadLua(const std::string& path);
+  
   /*
    *Loads and executes a buffer containing lua
    *Can be called from any thread
@@ -61,16 +71,14 @@ public:
   void addEventCallback(uint32_t event);
 
   inline lua::LuaContext&                luaContext()     {return m_luaContext;}
-  inline SdlGlContext&                   graphicsContext(){return m_glContext;}
 private:
   void onGLContextInit();
-
-  SdlGlContext                     m_glContext;
-  lua::LuaContext                  m_luaContext;
-  render::gl::GLContext            m_glRenderContext
   
+  SDLWindowManager       m_windowManager;
+  lua::LuaContext        m_luaContext;
+  render::gl::GLContext* m_glRenderContext;
+
   std::vector<SupportedComponents> m_mappedLuaObjects;
-  std::vector<GLWindow*>           m_windows;
   core::task_que::TaskQue<std::function<void()>> m_tasks;
 
   bool m_running = true;

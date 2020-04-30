@@ -7,7 +7,9 @@ namespace render{
 class ICamera{
 public:
   virtual void create() = 0;
-  
+  virtual void blitToScreen() = 0;
+  virtual void bind() = 0;
+
   inline Transform& transform() {return m_transform;}
   inline float fov() const {return m_fov;}
   inline void setFov(float f){m_fov=f;}
