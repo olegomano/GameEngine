@@ -3,27 +3,25 @@
 #include "buffer.h"
 #include "drawable.h"
 
+#include <unordered_map>
 #include <cstring>
 
 namespace render{
 namespace primitive{
 
-enum Type{
+enum Type : uint8_t{
+  FIRST = 0,
   Triangle,
   Cube,
   Sphere,
-  Rect
+  Rect,
+  LAST
 };
 
 
 template<typename _T_Context>
 class Primitives {
 public:
-  typename _T_Context::Drawable& get(Type t){
-    return m_triangle;
-  }
-  
-  
   static constexpr float Tris_Verts[] = {
     -0.5 , -0.5 , 0,
      0,5 , -0,5 , 0,
@@ -32,19 +30,23 @@ public:
 
 
   struct Prim{
-    const char*  name;
+    const Type  name;
     const float* buffer;
     const uint32_t byteCount;
-    typename _T_Context::Drawable& drawable;
+  };
+
+  static constexpr Prim PrimDeclaration[] = {
+    {Triangle,Tris_Verts,sizeof(Tris_Verts)}
   };
 
   Primitives(){}
+  
+  bool newPrimitive(Type t, typename _T_Context::Drawable& out){
+    out.vertex = m_vertexBuffers[t];
+    return true; 
+  }
 
   void create() {
-
-    const Prim PrimDeclaration[] = {
-      {"Tris",Tris_Verts,sizeof(Tris_Verts),this->m_triangle}
-    };
     constexpr int primCount = sizeof(PrimDeclaration) / sizeof(Prim);
     
     uint32_t totalSize = 0;
@@ -53,22 +55,22 @@ public:
       totalSize+=p.byteCount;
     }
 
-    m_vertexBuffer.create(totalSize);
+    m_buffer.create(totalSize);
     float* tmpBuffer = new float[totalSize];
     uint32_t tmpBufferCount = 0;
 
     for(int i = 0; i < primCount; i++){
       const Prim& p = PrimDeclaration[i];
       std::memcpy(tmpBuffer + tmpBufferCount,p.buffer,p.byteCount);
-      p.drawable.vertex = m_vertexBuffer.createAttrib(p.byteCount / sizeof(float),0,0); //count, offset, stride
+      m_vertexBuffers[p.name] = m_buffer.createAttrib(p.byteCount / sizeof(float),0,0); //count, offset, stride
     }
-    m_vertexBuffer.write((uint8_t*)tmpBuffer,tmpBufferCount);
+    m_buffer.write((uint8_t*)tmpBuffer,tmpBufferCount);
     
     delete[] tmpBuffer;
   };
 private:
-  typename _T_Context::Buffer m_vertexBuffer;
-  typename _T_Context::Drawable m_triangle;
+  std::unordered_map<Type,typename _T_Context::Buffer::Attribute> m_vertexBuffers;
+  typename _T_Context::Buffer m_buffer;
 };
 
 }

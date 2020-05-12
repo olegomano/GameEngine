@@ -16,13 +16,14 @@ const char* str = "print a";
 int main(int argc,char** argv){
   signal(SIGINT,signalHandler);
   
-  std::string dir(argv[0]);
-  std::string config(argv[1]);
+  //std::string dir(argv[0]);
+  //std::string config(argv[1]);
       
   Context context;    
   std::thread thread([&]{
     context.init();
     context.loopForever();   
+    Running = false;
   });
   
   std::string line;

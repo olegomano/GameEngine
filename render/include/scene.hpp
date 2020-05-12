@@ -1,19 +1,14 @@
 
 template<typename _T_Context>
-uint32_t Scene<_T_Context>::createComponentInstance(uint32_t entityId,Component c){{
+uint32_t Scene<_T_Context>::createComponentInstance(uint32_t entityId,Component c){
   switch(c){
     case Camera:
-      typename _T_Context::Camera c;
-      uint32_t instanceId = m_cameras.size();
-      m_cameras.push_back(entityId,c);
-      if(m_cameras.hook != nullptr){
-        m_cameras.hook->onCreated(m_cameras[instanceId]);
-      }
-      return instanceId;
-    }    
-    return -1;
-  }
+    uint32_t instanceId = m_cameras.createInstance(entityId); 
+    return instanceId;
+  }    
+  return -1;
 }
+
   
 template<typename _T_Context>
 void* Scene<_T_Context>::getComponentInstance(uint32_t entityId, Component c){
@@ -23,11 +18,11 @@ void* Scene<_T_Context>::getComponentInstance(uint32_t entityId, Component c){
   uint32_t instanceId = m_componentMap[c][entityId];    
   switch(c){
   case Transform:
-    return &m_transforms[instanceId];
+    return &m_sceneGraph.globals()[instanceId];
   case Camera:
-    return &m_cameras[instanceId];
+    return &m_cameras[instanceId].component;
   case Drawable:
-    return &m_drawables[instanceId];
+    return &m_drawables[instanceId].component;
   }
   return nullptr;
 }

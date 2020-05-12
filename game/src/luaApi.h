@@ -46,6 +46,12 @@ static int LuaApi_loadScript(lua_State* lua){
   return 1;
 }
 
+static int LuaApi_quit(lua_State* lua){
+  LuaApi_FunctionCall callInfo;
+  getLuaCallInfo(lua,callInfo);
+  callInfo.context->stopLooping();
+  return 0; 
+}
 
 struct Lua_ApiCall{
   const char* name;
@@ -56,7 +62,8 @@ constexpr Lua_ApiCall LuaApi[] = {
   {"create",&LuaApi_addComponent},
   {"test",&LuaApi_test},
   {"createWindow",&LuaApi_createWindow},
-  {"loadScript",&LuaApi_loadScript}
+  {"loadScript",&LuaApi_loadScript},
+  {"quit",&LuaApi_quit}
 };
 
 #endif

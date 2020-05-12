@@ -39,42 +39,19 @@ private:
   ColorShader m_colorShader;
 };
 
-class GLNullContext : public render::RenderContext<GLTexture,GLCamera,VBO,GLNullRenderer,GLDrawable>{
-public:
-  void create() override {
-    GLuint vao;
-    glCreateVertexArrays(1, &vao);
-    glBindVertexArray(vao); 
-  }
-};
-
-
-class GLContext : 
- public render::RenderContext<GLTexture,GLCamera,VBO,GLDefaultRenderer,GLDrawable>
-,public render::scene::SceneHook<GLCamera>
-,public render::scene::SceneHook<GLDrawable>
-{
+class GLContext : public ::render::RenderContext<GLTexture,GLCamera,VBO,GLDrawable>{
 public:
   void create() override{
     m_primitives.create();
     m_renderer.create();
- }
-
-  void onCreated(GLCamera& camera) override {
-  
   }
-
-  void onCreated(GLDrawable& drawable) override {
   
-  }
-
-  void onDeleted(GLCamera& camera) override {
+  void render() override{
+     
+  };
+private:
+  GLDefaultRenderer m_renderer;
   
-  }
-
-  void onDeleted(GLDrawable& camera) override {
-  
-  }
 };
 
 }

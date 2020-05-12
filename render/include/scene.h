@@ -3,49 +3,13 @@
 #include <unordered_map>
 #include "transform.h"
 #include "core.h"
+#include "scene_graph.h"
+#include "component.h"
 
 namespace render{
 namespace scene{
 
 class IAbstractScene;
-
-enum Component : uint32_t{
-  Drawable = 1,
-  Camera = 1<<1,
-  Transform = 1<<2
-};
-std::ostream& operator << (std::ostream& out, const Component& c);
-
-struct SiblingTable{
-  uint32_t componentIndex[32];
-};
-
-struct IComponentArray{
-  std::vector<uint64_t> globalIds;
-  std::vector<::Transform> transforms;
-    
-  uint32_t size() const {
-    return globalIds.size();
-  }
-};
-
-
-template<typename T>
-struct ComponentArray : public IComponentArray{
-  std::vector<T> components;
-  SceneHook<T>* hook = nullptr;
-
-  T& operator[](uint32_t instanceIndex){
-    return components[instanceIndex];
-  }
-
-  void push_back(uint64_t globalId,const T& t){
-    this->globalIds.push_back(globalId);
-    this->components.push_back(t);
-    this->transforms.push_back(::Transform());
-    this->siblingComponents.push_back({});
-  } 
-};
 
 
 uint32_t entityIdFromGlobalId(uint64_t id);
@@ -67,7 +31,7 @@ public:
 
 private:
   Entity();
-
+  /* low bits are entity id high bits are mask for added components*/
   uint64_t m_globalId;
   IAbstractScene* m_owner;
 };
@@ -132,14 +96,6 @@ protected:
   std::vector<Entity> m_allEntities;
 };
 
-
-template<typename T>
-class SceneHook{
-public:
-  virtual void onCreated(T& t);
-  virtual void onDeleted(T& t);
-};
-
 template<typename _T_Context>
 class Scene : public IAbstractScene{
 public:
@@ -158,9 +114,9 @@ public:
   }
 
   template<Component C>
-  auto& componentsOfType(){
+  const auto& componentsOfType(){
     if constexpr (C == Transform){
-      return m_transforms;
+      return m_sceneGraph.globals();
     }
     if constexpr (C == Camera){
       return m_cameras; 

@@ -17,6 +17,7 @@ class VBOAttrib;
 
 class VBO : public render::IBuffer{
 public:
+  typedef VBOAttrib Attribute;
   void create(uint32_t size) override; 
   void write(uint8_t* buffer, uint32_t count) override; 
   void write(uint8_t* buffer, uint32_t offset,uint32_t count) override;
