@@ -74,9 +74,9 @@ public:
 private:
   void onGLContextInit();
   
-  SDLWindowManager       m_windowManager;
-  lua::LuaContext        m_luaContext;
-  render::gl::GLContext* m_glRenderContext;
+  SDLWindowManager        m_windowManager;
+  lua::LuaContext         m_luaContext;
+  render::IRenderContext* m_glRenderContext;
 
   std::vector<SupportedComponents> m_mappedLuaObjects;
   core::task_que::TaskQue<std::function<void()>> m_tasks;

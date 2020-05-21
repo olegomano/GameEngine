@@ -13,8 +13,8 @@ namespace scene{
 
 enum Component : uint32_t{
   Drawable = 1,
-  Camera = 1<<1,
-  Transform = 1<<2
+  Camera = 1<<2,
+  Transform = 1<<3
 };
 std::ostream& operator << (std::ostream& out, const Component& c);
 

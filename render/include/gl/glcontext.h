@@ -42,7 +42,7 @@ private:
 class GLContext : public ::render::RenderContext<GLTexture,GLCamera,VBO,GLDrawable>{
 public:
   void create() override{
-    m_primitives.create();
+    ::render::RenderContext<GLTexture,GLCamera,VBO,GLDrawable>::create();
     m_renderer.create();
   }
   

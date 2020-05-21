@@ -9,9 +9,10 @@ namespace render{
 
 
 class IRenderContext{
+public:
   virtual void create() = 0;
   virtual void render() = 0;
-  virtual scene::IAbstractScene& scene() = 0;
+  virtual scene::Entity createPrimitive(render::primitive::Type t) = 0;
   virtual scene::Entity createCamera() = 0;
   //virtual void createPrimitive() = 0;
 //virtual void createColladaAsset() = 0;
@@ -34,10 +35,13 @@ public:
 public:
   RenderContext(){}
 
-  virtual void create() = 0;
+  virtual void create() override {
+    m_primitives.create();  
+  } 
 
-  scene::IAbstractScene& scene() override {
-    return m_scene;
+  scene::Entity createPrimitive(render::primitive::Type t) override {
+    Entity e = m_scene.createEntity({scene::Component::Drawable});
+    return r;
   }
 
   scene::Entity createCamera() override {
