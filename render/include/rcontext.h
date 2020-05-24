@@ -40,8 +40,9 @@ public:
   } 
 
   scene::Entity createPrimitive(render::primitive::Type t) override {
-    Entity e = m_scene.createEntity({scene::Component::Drawable});
-    return r;
+    std::initializer_list<scene::Component> components = {scene::Drawable,scene::Transform};
+    scene::Entity e = m_scene.createEntity(components);
+    return e;
   }
 
   scene::Entity createCamera() override {
