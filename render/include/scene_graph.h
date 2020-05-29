@@ -17,10 +17,15 @@ public:
   void calculateGlobals(){}
   auto& globals() {return m_globalPositions;}
   
+  uint32_t createTransform(){
+    ::Transform t;
+    return createTransform(t);
+  }
+
   uint32_t createTransform(::Transform& t, uint32_t parent = -1){
     uint32_t id = m_localPositions.size();
-    m_localPositions.push_back({});
-    m_globalPositions.push_back({});
+    m_localPositions.push_back(t);
+    m_globalPositions.push_back(t);
     
     PoseInfo pi;
     pi.parent = parent;

@@ -27,12 +27,13 @@ private:
 };
 };
 
+
+
 typedef core::log::Console cprint;
 
 std::ostream& cprint_error(const std::string&& id );
 std::ostream& cprint_debug(const std::string&& id );
 std::ostream& cprint_error(const std::string&  id = "ERROR");
 std::ostream& cprint_debug(const std::string&  id = "DEBUG");
-
 
 #endif

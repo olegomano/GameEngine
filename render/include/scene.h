@@ -5,7 +5,8 @@
 #include "core.h"
 #include "scene_graph.h"
 #include "component.h"
-
+#include "drawable.h"
+#include "camera.h"
 namespace render{
 namespace scene{
 
@@ -25,6 +26,7 @@ public:
 
   template<typename T>
   T& getComponent();
+  
   bool hasComponent(Component c);
   uint32_t entityId();
   void addTag(const std::string& t){}
@@ -119,12 +121,16 @@ public:
       return m_sceneGraph.globals();
     }
     if constexpr (C == Camera){
-      return m_cameras; 
+      return m_cameras.iterator(); 
     }
     if constexpr(C == Drawable){
-      return m_drawables;
+      return m_drawables.iterator();
     }
-    return {};
+    static_assert(true,"Unsupported Type");
+  }
+
+  const auto& drawables(){
+    return m_drawables.iterator();
   }
 
 private:

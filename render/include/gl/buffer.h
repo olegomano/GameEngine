@@ -16,6 +16,7 @@ namespace gl{
 class VBOAttrib;
 
 class VBO : public render::IBuffer{
+  friend std::ostream& operator<<(std::ostream& out, const VBOAttrib& attrib); 
 public:
   typedef VBOAttrib Attribute;
   void create(uint32_t size) override; 

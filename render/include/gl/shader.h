@@ -41,19 +41,19 @@ class ColorShader : public Shader{
 public:
     ColorShader(){
         m_uniforms   = {&m_u_color,&m_u_modelMatrix,&m_u_cameraMatrix};
-        m_attributes = {&m_a_vertex,&m_a_normal};
+        m_attributes = {&m_a_vertex};
     }
     
     void compile();
 
     template<typename T>
-    void draw(const T&& item){
+    void draw(const Transform& modelMatrix, const T&& item){
         using render::gl::VBOAttrib;
         std::string error = "";
 
-        Transform modelMatrix  = item.position;
+        ///Transform modelMatrix  = item.position;
         VBOAttrib vertexAttrib = item.vertex;
-        VBOAttrib normalAttrib = item.normals;    
+        //VBOAttrib normalAttrib = item.normals;    
         
         setAttribute<4>(m_a_vertex,vertexAttrib,error);
         setUniform(m_u_modelMatrix,modelMatrix.transform(),error);
@@ -66,13 +66,11 @@ public:
     }
 
     template<typename T>
-    void draw(const T& item){
+    void draw(const Transform& modelMatrix,const T& item){
         using render::gl::VBOAttrib;
         std::string error = "";
 
-        Transform modelMatrix  = item.position;
         VBOAttrib vertexAttrib = item.vertex;
-        VBOAttrib normalAttrib = item.normals;    
        
         setAttribute<4>(m_a_vertex,vertexAttrib,error);
         setUniform(m_u_modelMatrix,modelMatrix.transform(),error);

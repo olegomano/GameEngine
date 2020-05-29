@@ -37,16 +37,19 @@ uint32_t Entity::entityId(){
 template<>
 ICamera& Entity::getComponent<ICamera>(){
   assert(hasComponent(Camera));
+  return *((ICamera*)m_owner->getComponentInstance(m_globalId,Camera));
 }
 
 template<>
 IDrawable& Entity::getComponent<IDrawable>(){
-
+  assert(hasComponent(Drawable));
+  return *((IDrawable*)m_owner->getComponentInstance(m_globalId,Drawable));
 }
 
 template<>
 ::Transform& Entity::getComponent<::Transform>(){
-
+  assert(hasComponent(Transform));
+  return *((::Transform*)m_owner->getComponentInstance(m_globalId,Transform));
 }
 
 

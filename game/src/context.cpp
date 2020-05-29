@@ -59,22 +59,25 @@ void Context::createWindow(const std::string& name, uint32_t w, uint32_t h){
 }
 
 void Context::loopForever(){
-    while(m_running){        
-      m_tasks.run();  
-      for(auto& luaObjectVariant : m_mappedLuaObjects){
-        std::visit([](auto&& mappedObject){
-          mappedObject.read();
-        },luaObjectVariant);
-
-        for(auto& window : m_windowManager.windows()){
-          window->beginDraw(); 
-          m_glRenderContext->render();
-          window->endDraw();
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(16));
+  m_glRenderContext->createCamera();
+  m_glRenderContext->createPrimitive(render::primitive::Triangle);
+  while(m_running){        
+    m_tasks.run();  
+    for(auto& luaObjectVariant : m_mappedLuaObjects){
+      std::visit([](auto&& mappedObject){
+        mappedObject.read();
+      },luaObjectVariant);
     }
+
+    for(auto& window : m_windowManager.windows()){ 
+      window->beginDraw(); 
+      m_glRenderContext->render();
+      window->endDraw();
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(16));
   }
 }
+
 
 void Context::stopLooping(){
     m_running = false;

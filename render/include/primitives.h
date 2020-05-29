@@ -3,6 +3,7 @@
 #include "buffer.h"
 #include "drawable.h"
 
+#include <log.h>
 #include <unordered_map>
 #include <cstring>
 
@@ -21,13 +22,18 @@ enum Type : uint8_t{
 
 template<typename _T_Context>
 class Primitives {
-public:
-  static constexpr float Tris_Verts[] = {
-    -0.5 , -0.5 , 0,
-     0,5 , -0,5 , 0,
-     0   ,  0.5 , 0 
-  }; 
+public:  
+  static constexpr std::array<float,12> Tris_Verts{
+    -0.5f  , -0.5f , 0.0f, 1.0f,
+     0.5f  , -0.5f , 0.0f, 1.0f,
+     0.0f  ,  0.5f , 0.0f, 1.0f
+  };
 
+  static constexpr std::array<float,12> Rect_Verts{
+    -0.5f  , -0.5f , 0.0f, 1.0f,
+     0.5f  , -0.5f , 0.0f, 1.0f,
+     0.0f  ,  0.5f , 0.0f, 1.0f
+  };
 
   struct Prim{
     const Type  name;
@@ -36,7 +42,7 @@ public:
   };
 
   static constexpr Prim PrimDeclaration[] = {
-    {Triangle,Tris_Verts,sizeof(Tris_Verts)}
+    {Triangle,&Tris_Verts[0],Tris_Verts.size()*sizeof(float)}
   };
 
   Primitives(){}
@@ -47,25 +53,31 @@ public:
   }
 
   void create() {
+
     constexpr int primCount = sizeof(PrimDeclaration) / sizeof(Prim);
     
     uint32_t totalSize = 0;
-      for(int i = 0; i < primCount; i++){
+    for(int i = 0; i < primCount; i++){
       const Prim& p = PrimDeclaration[i];
       totalSize+=p.byteCount;
     }
-
+    cprint_debug("Primitive") << "Create Called, Primitives take " << totalSize << " bytes" << std::endl;
+    
     m_buffer.create(totalSize);
     float* tmpBuffer = new float[totalSize];
-    uint32_t tmpBufferCount = 0;
 
+    uint32_t tmpBufferCount = 0;
+  
+    uint32_t wroteBytes = 0;
     for(int i = 0; i < primCount; i++){
       const Prim& p = PrimDeclaration[i];
       std::memcpy(tmpBuffer + tmpBufferCount,p.buffer,p.byteCount);
-      m_vertexBuffers[p.name] = m_buffer.createAttrib(p.byteCount / sizeof(float),0,0); //count, offset, stride
+      uint32_t elementCount = p.byteCount / sizeof(float);
+      m_vertexBuffers[p.name] = m_buffer.createAttrib(elementCount,wroteBytes,0); //count, offset, stride
+      wroteBytes+=p.byteCount;
     }
-    m_buffer.write((uint8_t*)tmpBuffer,tmpBufferCount);
-    
+    //m_buffer.write((uint8_t*)&Tris_Verts[0],sizeof(Tris_Verts));
+    m_buffer.write((uint8_t*)tmpBuffer,totalSize);
     delete[] tmpBuffer;
   };
 private:

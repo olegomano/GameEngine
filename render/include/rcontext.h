@@ -3,6 +3,7 @@
 #include "scene.h"
 #include "primitives.h"
 
+#include <log.h>
 #include <initializer_list>
 
 namespace render{
@@ -40,17 +41,19 @@ public:
   } 
 
   scene::Entity createPrimitive(render::primitive::Type t) override {
+    cprint_debug("rcontext") << "Creating Primitive " << t << std::endl;
     std::initializer_list<scene::Component> components = {scene::Drawable,scene::Transform};
     scene::Entity e = m_scene.createEntity(components);
+    m_primitives.newPrimitive(t,(_T_Drawable&)e.getComponent<IDrawable>());
     return e;
   }
 
   scene::Entity createCamera() override {
+    cprint_debug("rcontext") << "Creating Camera " << std::endl;
     std::initializer_list<scene::Component> components = {scene::Camera,scene::Transform};
     scene::Entity e = m_scene.createEntity(components);
     return e;
   }
-
 protected:
   primitive::Primitives<Context> m_primitives;
   scene::Scene<Context> m_scene;

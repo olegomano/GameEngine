@@ -1,4 +1,5 @@
 #include "sdlwindow.h"
+#include <log.h>
 
 void SDLWindowManager::create(Backend b){
   m_backend = b; 
@@ -11,6 +12,7 @@ SDLWindow* SDLWindowManager::addWindow(const std::string& name, uint32_t w, uint
     case DX:
       return nullptr;
     case GL:
+      cprint_debug("SDLWidowmanager") << "Creating Window " <<  name << "(" << w << "," << h << ")" << std::endl;      
       GLWindow* window = new GLWindow(w,h,name);
       window->create(*this);
       m_windows.push_back(window);

@@ -1,12 +1,19 @@
 
 template<typename _T_Context>
 uint32_t Scene<_T_Context>::createComponentInstance(uint32_t entityId,Component c){
+  uint32_t instanceId = -1;
   switch(c){
     case Camera:
-    uint32_t instanceId = m_cameras.createInstance(entityId); 
-    return instanceId;
+    instanceId = m_cameras.createInstance(entityId); 
+    break;
+    case Drawable:
+    instanceId = m_drawables.createInstance(entityId);
+    break;
+    case Transform:
+    instanceId = m_sceneGraph.createTransform();
+    break;
   }    
-  return -1;
+  return instanceId;
 }
 
   

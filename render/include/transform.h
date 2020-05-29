@@ -34,6 +34,7 @@ public:
 
     inline glm::mat4 transform() const {return m_transform;}
     Transform& operator = (const glm::mat4 mat);
+    std::ostream& operator<<(std::ostream& out);
 
 private:
     glm::mat4 m_transform = glm::mat4(1);

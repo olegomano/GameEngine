@@ -1,4 +1,5 @@
 #include "../include/transform.h"
+#include <glm/gtx/string_cast.hpp>
 
 std::ostream& operator<<(std::ostream& out, const Transform& trans){
   for(int x = 0; x < 4; x++){
@@ -41,8 +42,6 @@ float Transform::positionZ() const{
   return m_transform[3][2];
 }
 
-
-
 void Transform::scale(float xyz){
     for(int x = 0; x < 3; x++){
         for(int y = 0; y < 3; y++){
@@ -50,3 +49,10 @@ void Transform::scale(float xyz){
         }    
     }
 }
+
+
+std::ostream& Transform::operator<<(std::ostream& out){
+  out << glm::to_string(m_transform);
+  return out;
+}
+
