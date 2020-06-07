@@ -16,6 +16,7 @@ enum Component : uint32_t{
   Camera = 1<<2,
   Transform = 1<<3
 };
+constexpr std::array<Component,3> ComponentTypeList = {Drawable,Camera,Transform};
 std::ostream& operator << (std::ostream& out, const Component& c);
 
 struct IComponentArray{

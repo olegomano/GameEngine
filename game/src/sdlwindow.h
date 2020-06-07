@@ -33,25 +33,22 @@ private:
 
 class SDLWindow{
 public:
-  SDLWindow(uint32_t w, uint32_t h, const std::string& name) : m_width(w),m_height(h),m_name(name){}
+  SDLWindow(uint32_t w, uint32_t h, const std::string& name,uint32_t id) : m_width(w),m_height(h),m_name(name),m_id(id){}
   virtual void create(SDLWindowManager& manager) = 0;
   virtual void beginDraw() = 0;
   virtual void endDraw() = 0;
   void close();
 
-
   inline uint32_t width() const {return m_width;}
   inline uint32_t height() const {return m_height;}
   inline uint32_t id() const {return m_id;}
   inline const std::string& name()const {return m_name;}
-  
 protected:
   const uint32_t    m_width;
   const uint32_t    m_height;
-  const std::string m_name; 
+  const std::string m_name;
   SDL_Window*       m_window;
   uint32_t          m_id;
-
 };
 
 class GLWindow : public SDLWindow{

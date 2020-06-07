@@ -34,6 +34,7 @@ static bool _check_gl_error(const std::string& prefix,std::string& out) {
                         case GL_INVALID_VALUE:          error="INVALID_VALUE";          break;
                         case GL_OUT_OF_MEMORY:          error="OUT_OF_MEMORY";          break;
                         case GL_INVALID_FRAMEBUFFER_OPERATION:  error="INVALID_FRAMEBUFFER_OPERATION";  break;
+                        default: error="UNKNOW_ERROR"; break;
                 }
                 out+= prefix + " " + error + "\n";                
                 err=glGetError();

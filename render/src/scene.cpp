@@ -7,7 +7,8 @@ uint32_t entityIdFromGlobalId(uint64_t id){
 }
 
 bool globalIdHasComponent(uint64_t globalId, Component c){
-  return true;
+  uint64_t mask = globalId & (((uint64_t) c) << 32);
+  return mask;
 }
 
 uint8_t componentIndex(Component c){
@@ -44,7 +45,10 @@ bool IAbstractScene::componentInstanceExists(uint32_t entityId,Component c){
 }
 
 uint32_t IAbstractScene::componentInstanceId(uint32_t entityId, Component c){
-  return -1;
+  if(componentInstanceExists(entityId,c)){
+    return -1;
+  }
+  return m_componentMap[c][entityId];
 }
 
 }}

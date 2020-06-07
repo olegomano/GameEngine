@@ -77,10 +77,12 @@ private:
   SDLWindowManager        m_windowManager;
   lua::LuaContext         m_luaContext;
   render::IRenderContext* m_glRenderContext;
-
-  std::vector<SupportedComponents> m_mappedLuaObjects;
-  core::task_que::TaskQue<std::function<void()>> m_tasks;
-
+  
+  std::unordered_map<uint32_t,render::scene::Entity> m_windowCameras;
+  std::vector<SupportedComponents>                   m_mappedLuaObjects;
+  core::task_que::TaskQue<std::function<void()>>     m_tasks;
+  
+  uint64_t m_frame = 0;
   bool m_running = true;
 };
 #endif

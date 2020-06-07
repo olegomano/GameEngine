@@ -20,6 +20,7 @@ uint8_t componentIndex(Component c);
 class Entity{
 public:
   friend IAbstractScene;
+  Entity();
   Entity(uint64_t globalId,IAbstractScene* owner);
   Entity(const Entity& other);
   Entity& operator=(const Entity& other);
@@ -27,19 +28,23 @@ public:
   template<typename T>
   T& getComponent();
   
-  bool hasComponent(Component c);
-  uint32_t entityId();
+  bool hasComponent(Component c) const;
+  uint32_t entityId() const;
   void addTag(const std::string& t){}
 
 private:
-  Entity();
   /* low bits are entity id high bits are mask for added components*/
-  uint64_t m_globalId;
-  IAbstractScene* m_owner;
+  uint64_t m_globalId = -1;
+  IAbstractScene* m_owner = nullptr;
 };
 
 class IAbstractScene{
 public:
+  /**
+   *call to update global positions of all components
+   */
+  virtual void update() = 0;
+
   /**
    *allocates an instance of this component Type
    *returns the instanceId
@@ -64,8 +69,10 @@ public:
     uint32_t entityId = ++m_entityId;
     uint64_t guid = entityId;
     cprint_debug("Scene") << "Creating new Entity " << entityId << std::endl;
+
     for(const Component& c : componentList){
       uint32_t instanceId = createComponentInstance(entityId,c);
+      cprint_debug("Scene") << "Creating Component " << c << " instance id " << instanceId << std::endl; 
       if(instanceId == -1){
         cprint_error("Scene") << "Failed to create component " << c << std::endl;
         continue;
@@ -74,6 +81,7 @@ public:
       guid |= ((uint64_t)(c) << 32);
     }
     m_allEntities.push_back(Entity(guid,this));
+    onEntityCreated(Entity(guid,this));
     return Entity(guid,this);
   }
   /**
@@ -92,8 +100,10 @@ public:
   uint32_t componentInstanceId(uint32_t entityId, Component c);
     
 protected:
+  virtual void onEntityCreated(const Entity& e) = 0;
+  
   uint32_t m_entityId = 0;
-  std::unordered_map<Component,std::unordered_map<uint32_t,uint32_t>> m_componentMap;
+  std::unordered_map<Component,std::unordered_map<uint32_t,uint32_t>> m_componentMap; //component -> entity -> instance
   std::unordered_map<std::string,std::vector<uint64_t>> m_entityTags;
   std::vector<Entity> m_allEntities;
 };
@@ -101,6 +111,15 @@ protected:
 template<typename _T_Context>
 class Scene : public IAbstractScene{
 public:
+  Scene(){
+    m_componentArrayMap[Component::Drawable] = &m_drawables;
+    m_componentArrayMap[Component::Camera] = &m_cameras;
+  }
+
+  void update(){
+    m_sceneGraph.updateLinks();
+  }
+
   uint32_t createComponentInstance(uint32_t entityId, Component c) override;
   void* getComponentInstance(uint32_t entityId, Component c) override; 
 
@@ -133,12 +152,18 @@ public:
     return m_drawables.iterator();
   }
 
+  const auto& cameras(){
+    return m_cameras.iterator();
+  }
+protected:
+  void onEntityCreated(const Entity& e) override; 
+
 private:
   
   ComponentArray<typename _T_Context::Camera>   m_cameras;
   ComponentArray<typename _T_Context::Drawable> m_drawables;
   SceneGraph m_sceneGraph;
-  std::vector<IComponentArray*> m_components;
+  std::unordered_map<Component,IComponentArray*> m_componentArrayMap;
 };
 
 #include "scene.hpp"

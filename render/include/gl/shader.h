@@ -41,21 +41,23 @@ class ColorShader : public Shader{
 public:
     ColorShader(){
         m_uniforms   = {&m_u_color,&m_u_modelMatrix,&m_u_cameraMatrix};
-        m_attributes = {&m_a_vertex};
+        m_attributes = {&m_a_vertex,&m_a_uv};
     }
     
     void compile();
-
+    
+    /**
     template<typename T>
-    void draw(const Transform& modelMatrix, const T&& item){
+    void draw(const Transform& cameraMatrix, const Transform& modelMatrix, const T&& item){
         using render::gl::VBOAttrib;
         std::string error = "";
 
         ///Transform modelMatrix  = item.position;
         VBOAttrib vertexAttrib = item.vertex;
-        //VBOAttrib normalAttrib = item.normals;    
+        VBOAttrib uvAttrib = item.uv;    
         
         setAttribute<4>(m_a_vertex,vertexAttrib,error);
+        setAttribute<2>(m_a_uv,uvAttrib,error);
         setUniform(m_u_modelMatrix,modelMatrix.transform(),error);
         glDrawArrays(GL_TRIANGLES,0,vertexAttrib.count());
         _check_gl_error("Draw Arrays",error);
@@ -64,19 +66,23 @@ public:
             std::cout << "ERROR: color shader " << std::endl << error << std::endl;
         }
     }
+    **/
 
     template<typename T>
-    void draw(const Transform& modelMatrix,const T& item){
+    void draw(const Transform& cameraMatrix, const Transform& modelMatrix,const T& item){
         using render::gl::VBOAttrib;
         std::string error = "";
 
-        VBOAttrib vertexAttrib = item.vertex;
+        VBOAttrib vertexAttrib = item.vertex; 
+        VBOAttrib uvAttrib = item.uv;    
        
         setAttribute<4>(m_a_vertex,vertexAttrib,error);
+        setAttribute<2>(m_a_uv,uvAttrib,error);
+        setUniform(m_u_cameraMatrix,cameraMatrix.transform(), error);
         setUniform(m_u_modelMatrix,modelMatrix.transform(),error);
         glDrawArrays(GL_TRIANGLES,0,vertexAttrib.count());
         _check_gl_error("Draw Arrays",error);
-
+        
         if(error.size() > 0){
             std::cout << "ERROR: color shader " << std::endl << error << std::endl;
         }
@@ -92,6 +98,7 @@ private:
 
     GLuint m_a_vertex;
     GLuint m_a_normal;
+    GLuint m_a_uv;
 };
 
 

@@ -6,20 +6,44 @@ namespace render{
 
 class ICamera{
 public:
-  virtual void create() = 0;
-  virtual void blitToScreen() = 0;
-  virtual void bind() = 0;
+  virtual void create(uint32_t w, uint32_t h){
+    m_width = w;
+    m_height = h;
+    buildProjection();
+  };
+  /**
+   * Writes the output of the camera to the sceen
+   * goes to the rect, l,t,r,b in pixel coordintes in the screen
+   * (0,0) is top left
+   */
+  virtual void blitToScreen(uint32_t l, uint32_t t, uint32_t r, uint32_t b) = 0;
 
-  inline Transform& transform() {return m_transform;}
-  inline float fov() const {return m_fov;}
-  inline void setFov(float f){m_fov=f;}
+  inline float fov() const {return m_focus;}
+  
+  inline void setFov(float f){
+    m_focus=f; //TODO: focus = 1/tan(f)
+    buildProjection();  
+  }
+  
+  inline uint32_t height() const {return m_height;}
+  inline uint32_t width() const {return m_width;}
 
-  inline const glm::mat4& projectionMatrix() {return m_projetion;}
-  inline const glm::mat4& modelMatrix() {return m_transform.transform();}
+
+  inline const glm::mat4& projection() const {
+    return m_projetion;
+  }
+
 private:
+  void buildProjection(){
+    m_projetion = glm::mat4(m_focus);
+  }
+
   glm::mat4 m_projetion;
-  Transform m_transform;
-  float     m_fov = 90;
+  float     m_near   = 0.01;
+  float     m_far    = 100;
+  float     m_focus  = 1;
+  uint32_t  m_width  = 0;
+  uint32_t  m_height = 0;
 };
 
 

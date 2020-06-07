@@ -23,7 +23,8 @@ void GLWindow::create(SDLWindowManager& manager){
 }
 
 void GLWindow::beginDraw(){
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glViewport(0,0,m_width,m_height);
+  glClear(GL_COLOR_BUFFER_BIT);
   glClearColor(1,1,1,1);
 }
 

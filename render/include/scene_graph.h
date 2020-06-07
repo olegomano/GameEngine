@@ -35,7 +35,14 @@ public:
   }
 
   void updateLinks(){
-  
+    for(int p =0; p < m_localPositions.size(); p++){
+      const PoseInfo& pinfo = m_poseInfo[p];
+      const ::Transform& transform = m_globalPositions[p];
+
+      for(int i = 0; i < pinfo.instanceId.size(); i++){
+        pinfo.componentArray[i]->setTransformInstance(pinfo.instanceId[i],transform);
+      }
+    } 
   }
 
   void linkTransform(uint32_t transformIndex, IComponentArray* array, uint32_t instance){
@@ -43,6 +50,7 @@ public:
     m_poseInfo[transformIndex].componentArray.push_back(array);
   } 
 private:
+  //alligned arrays, structure of arrays type stuff
   std::vector<::Transform> m_localPositions;
   std::vector<::Transform> m_globalPositions;
   std::vector<PoseInfo>    m_poseInfo; //0 index is root

@@ -12,6 +12,11 @@ std::ostream& operator<<(std::ostream& out, const Transform& trans){
   return out;
 }
 
+Transform& Transform::operator=(const Transform& other){
+  m_transform = other.m_transform;
+  return *this;
+}
+
 void Transform::setPosition(float x, float y, float z){
    m_transform[3][0] = x;
    m_transform[3][1] = y;

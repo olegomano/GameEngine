@@ -24,13 +24,14 @@ Entity::Entity(const Entity& other){
 Entity& Entity::operator=(const Entity& other){
   m_globalId = other.m_globalId;
   m_owner = other.m_owner;
+  return *this;
 }
 
-bool Entity::hasComponent(Component c){
+bool Entity::hasComponent(Component c) const{
   return globalIdHasComponent(m_globalId,c);
 }
 
-uint32_t Entity::entityId(){
+uint32_t Entity::entityId() const {
   return entityIdFromGlobalId(m_globalId);
 }
 

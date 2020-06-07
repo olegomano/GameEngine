@@ -13,6 +13,7 @@ namespace gl{
 
 struct GLDrawable{
   VBOAttrib vertex;
+  VBOAttrib uv;
 };
 
 class GLDefaultRenderer{
@@ -35,11 +36,16 @@ public:
   void draw(T& scene){
     m_colorShader.enable();
     const auto& drawables = scene.drawables();
-    for(const auto& d : drawables){
-    //  cprint_debug("GLDefaultRenderer") << "Drawing entity " << d.entityId << std::endl;
-      m_colorShader.draw(d.transform,d.component);
-      cprint_debug("GLDefaultRenderer") << std::endl << d.transform << " " << d.component.vertex << " " << std::endl;
-
+    const auto& cameras = scene.cameras();
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    for(const auto& c :cameras){
+      c.component.bind();
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+      for(const auto& d : drawables){
+        m_colorShader.draw(c.transform,d.transform,d.component);
+      }
+      c.component.unbind();
     }
     m_colorShader.disable();
   }
@@ -47,6 +53,13 @@ public:
 private:
   ColorShader m_colorShader;
 };
+
+/**
+ *camera transform
+ *camera render-to-texture
+ *multi-window
+ *
+ */
 
 class GLContext : public ::render::RenderContext<GLTexture,GLCamera,VBO,GLDrawable>{
 public:
@@ -57,6 +70,7 @@ public:
   }
   
   void render() override{
+    m_scene.update();
     m_renderer.draw(m_scene);  
   };
 private:

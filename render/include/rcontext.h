@@ -14,7 +14,7 @@ public:
   virtual void create() = 0;
   virtual void render() = 0;
   virtual scene::Entity createPrimitive(render::primitive::Type t) = 0;
-  virtual scene::Entity createCamera() = 0;
+  virtual scene::Entity createCamera(uint32_t w, uint32_t h) = 0;
   //virtual void createPrimitive() = 0;
 //virtual void createColladaAsset() = 0;
 };
@@ -48,10 +48,11 @@ public:
     return e;
   }
 
-  scene::Entity createCamera() override {
+  scene::Entity createCamera(uint32_t w, uint32_t h) override {
     cprint_debug("rcontext") << "Creating Camera " << std::endl;
     std::initializer_list<scene::Component> components = {scene::Camera,scene::Transform};
     scene::Entity e = m_scene.createEntity(components);
+    e.getComponent<ICamera>().create(w,h);
     return e;
   }
 protected:

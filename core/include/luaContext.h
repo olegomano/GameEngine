@@ -258,8 +258,13 @@ void LuaVar::read(T& out){
   m_context->readVar(*this,out);
 }
 
+class IMappedObject{
+  virtual void read() = 0;
+  virtual void write() = 0;
+};
+
 template<typename T>
-class MappedObject{
+class MappedObject : public IMappedObject{
 public:
   MappedObject(lua::LuaContext& context,T& ptr) : m_data(ptr) {
     m_luaVar = context.declareVar();
@@ -268,11 +273,11 @@ public:
   T* operator ->(){
     return &m_data;
   } 
-  void read(){
+  void read() override {
     m_luaVar.read(m_data);  
   }
 
-  void write(){
+  void write() override {
     m_luaVar.write(m_data);
   }
 private:

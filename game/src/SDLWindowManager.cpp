@@ -13,7 +13,7 @@ SDLWindow* SDLWindowManager::addWindow(const std::string& name, uint32_t w, uint
       return nullptr;
     case GL:
       cprint_debug("SDLWidowmanager") << "Creating Window " <<  name << "(" << w << "," << h << ")" << std::endl;      
-      GLWindow* window = new GLWindow(w,h,name);
+      SDLWindow* window = new GLWindow(w,h,name,m_windows.size());
       window->create(*this);
       m_windows.push_back(window);
       return window;

@@ -34,3 +34,15 @@ void* Scene<_T_Context>::getComponentInstance(uint32_t entityId, Component c){
   return nullptr;
 }
 
+
+template<typename _T_Context>
+void Scene<_T_Context>::onEntityCreated(const Entity& e){
+  if( !e.hasComponent(Component::Transform) ) return;
+  uint32_t transformIndex = m_componentMap[Transform][e.entityId()];
+
+  for(int i = 0; i < ComponentTypeList.size(); i++){
+    if(e.hasComponent(ComponentTypeList[i]) && ComponentTypeList[i] != Component::Transform){
+      m_sceneGraph.linkTransform(transformIndex,m_componentArrayMap[ComponentTypeList[i]],m_componentMap[ComponentTypeList[i]][e.entityId()]);
+    }
+  }
+}
