@@ -7,6 +7,9 @@
 #include <vector>
 #include "transform.h"
 #include "scene_hook.h"
+#include "drawable.h"
+#include "camera.h"
+#include "transform.h"
 
 namespace render{
 namespace scene{
@@ -17,6 +20,7 @@ enum Component : uint32_t{
   Transform = 1<<3
 };
 constexpr std::array<Component,3> ComponentTypeList = {Drawable,Camera,Transform};
+
 std::ostream& operator << (std::ostream& out, const Component& c);
 
 struct IComponentArray{
@@ -54,9 +58,6 @@ struct ComponentArray : public IComponentArray{
     uint32_t instanceId = components.size();
     instanceMap[entityId] = instanceId;
     components.push_back({ {} ,data,entityId});
-    if(hook != nullptr){
-      //hook->onCreated();
-    }
     return instanceId;
   }
 
@@ -68,7 +69,6 @@ struct ComponentArray : public IComponentArray{
   std::vector<Component> components;
   std::unordered_map<uint32_t,uint32_t> instanceMap; //entityId -> instanceId
   
-  SceneHook<T>* hook = nullptr; 
 };
 
 };

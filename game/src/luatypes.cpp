@@ -1,12 +1,5 @@
 #include "types.h"
+#include "camera.h"
+#include "drawable.h"
 
-template<>
-int push_struct<>(lua_State* lua,const ){
-
-}
-
-template<>
-void create_table(lua_State* lua, const ){
-
-
-}
+template<render::>

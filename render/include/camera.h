@@ -20,10 +20,11 @@ public:
 
   inline float fov() const {return m_focus;}
   
-  inline void setFov(float f){
+  inline void setFov(float f, float aspectRatio = 1){
     m_focus=f; //TODO: focus = 1/tan(f)
+    m_aspectRatio = aspectRatio;
     buildProjection();  
-  }
+  } 
   
   inline uint32_t height() const {return m_height;}
   inline uint32_t width() const {return m_width;}
@@ -34,16 +35,18 @@ public:
   }
 
 private:
-  void buildProjection(){
+  inline void buildProjection(){
     m_projetion = glm::mat4(m_focus);
+    m_projetion[1][1]*=m_aspectRatio;
   }
 
   glm::mat4 m_projetion;
-  float     m_near   = 0.01;
-  float     m_far    = 100;
-  float     m_focus  = 1;
-  uint32_t  m_width  = 0;
-  uint32_t  m_height = 0;
+  float     m_near        = 0.01;
+  float     m_far         = 100;
+  float     m_focus       = 1;
+  float     m_aspectRatio = 1;
+  uint32_t  m_width       = 0;
+  uint32_t  m_height      = 0;
 };
 
 

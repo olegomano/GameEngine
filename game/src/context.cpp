@@ -2,6 +2,7 @@
 #include <log.h>
 #include "luaApi.h"
 #include <chrono>
+#include <file.h>
 #define LOG_TAG "Context"
 
 Context::Context(){
@@ -9,26 +10,43 @@ Context::Context(){
 }
 
 void Context::init(){
-  m_windowManager.create(SDLWindowManager::Backend::GL);
-  SDLWindow* window = m_windowManager.addWindow("Game",900,900);
-  if(window == nullptr){
-    cprint_error(LOG_TAG) << "Failed init, windowManager returned null window" << std::endl;
-    return;
-  }
-  m_glRenderContext = new render::gl::GLContext();
-  m_glRenderContext->create(); 
   m_luaContext.init(0);
-  
-  render::scene::Entity camera = m_glRenderContext->createCamera(320,320);
-
-  m_windowCameras[window->id()] = camera;
-
   int fcount = sizeof(LuaApi)/sizeof(Lua_ApiCall); 
   for(int i =0 ; i < fcount ; i++){
     cprint_debug(LOG_TAG) << "Registering Function " << LuaApi[i].name << std::endl;
     m_luaContext.registerFunction(LuaApi[i].name,LuaApi[i].call);
   }
   m_luaContext.createGlobal("_SCRIPT",(void*)this);
+  for(const std::string& path : m_initScript){
+    core::file::File f = core::file::File(path);
+    f.load();
+    m_luaContext.loadBuffer(f.data(),f.size());
+  }
+}
+
+
+void Context::initRendering(uint32_t screenW, uint32_t screenH, float renderScale, SDLWindowManager::Backend b){
+  cprint_debug(LOG_TAG) << "Initializing Rendering " << screenW << " " << screenH << " " << renderScale << std::endl;
+  switch(b){
+  case SDLWindowManager::Backend::GL:
+    m_windowManager.create(SDLWindowManager::Backend::GL);
+    m_glRenderContext = new render::gl::GLContext();
+    break;
+  default:
+    return;
+  }
+
+  SDLWindow* window = m_windowManager.addWindow("Game",screenW,screenH);
+  if(window == nullptr){
+    cprint_debug(LOG_TAG) << "Failed init, windowManager returned null window" << std::endl;
+    return;
+  }
+  m_glRenderContext->create();
+    
+  render::scene::Entity camera = m_glRenderContext->createCamera(window->width()*renderScale,window->height()*renderScale);
+  camera.getComponent<render::ICamera>().setFov(1,(float)screenW/(float)screenH);
+  m_windowCameras[window->id()] = camera;
+  m_isRenderInit = true;
 }
 
 
@@ -36,21 +54,18 @@ void Context::onGLContextInit(){
 
 }
 
-void Context::loadLua(const std::string& name){
+void Context::loadLuaFile(const std::string& name){
   cprint_debug(LOG_TAG) << "Loading Script " << name << std::endl;
-  m_tasks.push_back([=](){
-    core::file::File f = core::file::File(name);
-    f.load();
-    this->m_luaContext.loadBuffer(f.data(),f.size());    
-  });
+  core::file::File f = core::file::File(name);
+  f.load();
+  this->m_luaContext.loadBuffer(f.data(),f.size());    
 }
 
-void Context::loadLua(const uint8_t* data,uint32_t len){
-  m_tasks.push_back([=](){
-    cprint_debug(LOG_TAG) << "Loading Buffer " << (void*) data << " " << len << std::endl;
-    this->m_luaContext.loadBuffer(data,len,cprint_debug("Lua"));    
-  });
+void Context::loadLuaBuffer(const std::string& line){
+  cprint_debug(LOG_TAG) << "Loading Buffer " << line << std::endl;
+  this->m_luaContext.loadBuffer((const uint8_t*)line.c_str(),line.size(),cprint_debug("Lua"));    
 }
+
 
 void Context::createWindow(const std::string& name, uint32_t w, uint32_t h){
   cprint_debug(LOG_TAG) << "Creating Window " << name << "(" << w << "," << h << ")" << std::endl; 
@@ -74,15 +89,23 @@ void Context::createWindow(const std::string& name, uint32_t w, uint32_t h){
 }
 
 void Context::loopForever(){
+  while(!m_isRenderInit){
+    std::this_thread::sleep_for(std::chrono::milliseconds(16));
+    //cprint_debug(LOG_TAG) << "Waiting For Rendering to Init... " << std::endl;
+    m_tasks.run();  
+  }
+
+  cprint_debug(LOG_TAG) << "Game Loop Started" << std::endl;
+
   std::vector<render::scene::Entity> e;
 
-  int w = 2;
-  int h = 1;
+  int w = 6;
+  int h = 6;
   for(int x =0 ; x < w; x++){
     for(int y = 0; y < h; y++){
       render::scene::Entity k = m_glRenderContext->createPrimitive(render::primitive::Cube);
       //k.getComponent<Transform>().scale(1);
-      k.getComponent<Transform>().setPosition(0,0,2);
+      k.getComponent<Transform>().setPosition(x,y,2);
       e.push_back(k);
     }
   }
@@ -90,16 +113,11 @@ void Context::loopForever(){
   while(m_running){
     ++m_frame;
     for(auto& a : e){
-      a.getComponent<Transform>().rotate(1,1,1,.003f);
+      a.getComponent<Transform>().rotate(0,1,0,.012f);
       //a.getComponent<Transform>().setPositionZ(sin(m_frame/10.0f));
     }
-
     m_tasks.run();  
-    for(auto& luaObjectVariant : m_mappedLuaObjects){
-      std::visit([](auto&& mappedObject){
-        mappedObject.read();
-      },luaObjectVariant);
-    }
+    m_glRenderContext->handleEvents(); 
     /**
      * Draws every camera to a texture
      */

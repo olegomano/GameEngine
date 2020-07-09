@@ -16,7 +16,7 @@ uint32_t Scene<_T_Context>::createComponentInstance(uint32_t entityId,Component 
   return instanceId;
 }
 
-  
+ 
 template<typename _T_Context>
 void* Scene<_T_Context>::getComponentInstance(uint32_t entityId, Component c){
   if(!componentInstanceExists(entityId,c)){

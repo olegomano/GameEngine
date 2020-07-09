@@ -1,22 +1,36 @@
 #include "types.h"
 
 
-namespace lua{
-template<>
-int push_struct<GameComponent>(lua_State* lua, const GameComponent& component){
-  LuaRef ref = component.luaRef();
-  return lua::push_struct(lua,ref);
-} 
-};
 
 
 template<>
-lua::LuaRef lua::create_table<Drawable>(lua::Script* s, const Drawable& d){
-  lua::FlatTable dtable;
-  dtable[std::string(Drawable::LuaX)] = d.position.positionX();
-  dtable[std::string(Drawable::LuaY)] = d.position.positionY();
-  dtable[std::string(Drawable::LuaZ)] = d.position.positionZ();
-  return create_table(s,dtable);
+int lua::push_struct<render::scene::Entity>(lua_State* lua, const Entity& e){  
+  return lua::LuaRef::Type::TABLE;
+}
+
+template<>
+void lua::read_struct<render::scene::Entity>(lua_State* lua, const Entity& e){
+
+}
+
+template<>
+int lua::push_struct<render::ICamera>(lua_State* lua, const ICamera& a){  
+  return lua::LuaRef::Type::TABLE;
+}
+
+template<>
+void lua::read_struct<render::ICamera>(lua_State* lua, ICamera& a){
+
+}
+
+template<>
+void lua::push_struct<Transform>(lua_State* lua, const Transform& t){
+
+}
+
+template<>
+int lua::push_struct<Transform>(lua_State* lua, Transform& out){
+
 }
 
 template<>

@@ -7,6 +7,7 @@ add_library(renderer STATIC src/shader.cpp
   src/transform.cpp 
   src/gl/buffer.cpp
   src/scene.cpp
+  #src/scene_events.cpp
   src/entity.cpp
   )
 target_include_directories(renderer PRIVATE ${OPENGL_INCLUDE_DIRS})

@@ -41,22 +41,17 @@ public:
     uint32_t maxId = m_taskId;
     if(m_taskCount == 0) return 0;
     while(m_taskCount > 0){
-      std::cout << "about run lock " << std::endl;
       m_lock.lock();
-      std::cout << "run lock " << std::endl;
       Task task = m_deque.front();
 
       if(task.id < maxId){
         m_deque.pop_front();
         m_lock.unlock();
-        std::cout << "run unlock " << std::endl;
 
         task.task();
-        std::cout << "Finished Running Task" << std::endl;
         ++taskCount;
         --m_taskCount;
       }else{
-        std::cout << "run unlock break" << std::endl;
         m_lock.unlock();
         break;
       }

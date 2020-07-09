@@ -10,4 +10,6 @@
 #include "collection.h"
 #include "log.h"
 #include "utils.h"
+#include "latch.h" 
+#include "eventbus.h"
 #endif

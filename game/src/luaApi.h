@@ -3,6 +3,8 @@
 #include "context.h"
 #include "core.h"
 #include "types.h"
+#include "sdlwindow.h"
+#include <chrono>
 #include <primitives.h>
 #include <map>
 #include <tuple>
@@ -28,7 +30,13 @@ static int LuaApi_test(lua_State* lua){
 static int LuaApi_addComponent(lua_State* lua){
   LuaApi_FunctionCall callInfo;
   getLuaCallInfo(lua,callInfo);
-  return 1;
+  std::string type = callInfo.params["type"];
+  if(type == "rect"){
+    
+  }else if(type == "cube"){
+
+  }
+  return 0;
 }
 
 static int LuaApi_createWindow(lua_State* lua){ 
@@ -42,8 +50,27 @@ static int LuaApi_createWindow(lua_State* lua){
 static int LuaApi_loadScript(lua_State* lua){ 
   LuaApi_FunctionCall callInfo;
   getLuaCallInfo(lua,callInfo);
-  callInfo.context->loadLua(callInfo.params["path"]);
+  callInfo.context->loadLuaFile(callInfo.params["path"]);
   return 1;
+}
+
+static int LuaApi_sleep(lua_State* lua){
+  LuaApi_FunctionCall callInfo;
+  getLuaCallInfo(lua,callInfo);
+  int ms = callInfo.params["ms"];
+  std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+  return 0;
+}
+
+static int LuaApi_initRenderContext(lua_State* lua){
+  LuaApi_FunctionCall callInfo;
+  getLuaCallInfo(lua,callInfo);
+  int         windowW       = callInfo.params["width"]; 
+  int         windowH       = callInfo.params["height"];
+  float       renderScale   = callInfo.params["scale"];
+  std::string backend       = callInfo.params["backend"];
+  callInfo.context->initRendering(windowW,windowH,renderScale,SDLWindowManager::Backend::GL);
+  return 0; 
 }
 
 static int LuaApi_quit(lua_State* lua){
@@ -63,7 +90,10 @@ constexpr Lua_ApiCall LuaApi[] = {
   {"test",&LuaApi_test},
   {"createWindow",&LuaApi_createWindow},
   {"loadScript",&LuaApi_loadScript},
-  {"quit",&LuaApi_quit}
+  {"initRender",&LuaApi_initRenderContext},
+  {"quit",&LuaApi_quit},
+  {"sleep",&LuaApi_sleep}
 };
+constexpr uint8_t LuaApi_Len = sizeof(LuaApi) / sizeof(Lua_ApiCall);
 
 #endif

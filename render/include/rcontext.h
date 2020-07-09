@@ -2,12 +2,12 @@
 #define _RENDER_RCONTEXT_H_ 
 #include "scene.h"
 #include "primitives.h"
+#include "eventbus.h"
 
 #include <log.h>
 #include <initializer_list>
 
 namespace render{
-
 
 class IRenderContext{
 public:
@@ -15,8 +15,8 @@ public:
   virtual void render() = 0;
   virtual scene::Entity createPrimitive(render::primitive::Type t) = 0;
   virtual scene::Entity createCamera(uint32_t w, uint32_t h) = 0;
-  //virtual void createPrimitive() = 0;
-//virtual void createColladaAsset() = 0;
+  virtual void setEventListener(core::eventbus::Listener l) = 0;  
+  virtual void handleEvents() = 0;
 };
 
 template<
@@ -38,7 +38,16 @@ public:
 
   virtual void create() override {
     m_primitives.create();  
-  } 
+  }
+
+  void setEventListener(core::eventbus::Listener l) override {
+    m_scene.eventBus().addListener(l);
+  }
+
+  void handleEvents() override{
+    m_scene.eventBus().flush();
+  }
+
 
   scene::Entity createPrimitive(render::primitive::Type t) override {
     cprint_debug("rcontext") << "Creating Primitive " << t << std::endl;

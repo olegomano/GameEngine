@@ -160,6 +160,15 @@ public:
     }
   }
 
+  template<typename T>
+  bool loadBufferForResult(const uint8_t* buffer, uint32_t len, T& result, std::ostream& out = std::cout){
+    if(!loadBuffer(buffer,len,out)){
+      return false;
+    }
+    read_struct<T>(m_lua,result); 
+    return true;
+  }
+
   void registerFunction(const std::string& name, lua_CFunction function){
     lua_register(m_lua,name.c_str(),function);
   }
@@ -193,6 +202,9 @@ public:
   template<typename T>
   void writeVar(LuaVar var, const T& out);
   
+  /*
+   * puts var at top of lua stack
+   */
   void loadVar(LuaVar var){
     cprint_debug(LOG_TAG) << "loadVar " << var << std::endl;
     lua_getglobal(m_lua,_INDEX_TABLE);
@@ -281,7 +293,7 @@ public:
     m_luaVar.write(m_data);
   }
 private:
-  T&               m_data;
+  T                m_data;
   lua::LuaVar      m_luaVar;
 };
 

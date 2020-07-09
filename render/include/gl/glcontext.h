@@ -43,7 +43,7 @@ public:
       c.component.bind();
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
       for(const auto& d : drawables){
-        m_colorShader.draw(c.transform,d.transform,d.component);
+        m_colorShader.draw(c.component.projection(),c.transform.invTransform(),d.transform.transform(),d.component);
       }
       c.component.unbind();
     }

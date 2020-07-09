@@ -7,36 +7,12 @@
 #include "component.h"
 #include "drawable.h"
 #include "camera.h"
+#include "eventbus.h"
+#include "entity.h"
+#include "scene_events.h"
+
 namespace render{
 namespace scene{
-
-class IAbstractScene;
-
-
-uint32_t entityIdFromGlobalId(uint64_t id);
-bool globalIdHasComponent(uint64_t globalId, Component c);
-uint8_t componentIndex(Component c);
-
-class Entity{
-public:
-  friend IAbstractScene;
-  Entity();
-  Entity(uint64_t globalId,IAbstractScene* owner);
-  Entity(const Entity& other);
-  Entity& operator=(const Entity& other);
-
-  template<typename T>
-  T& getComponent();
-  
-  bool hasComponent(Component c) const;
-  uint32_t entityId() const;
-  void addTag(const std::string& t){}
-
-private:
-  /* low bits are entity id high bits are mask for added components*/
-  uint64_t m_globalId = -1;
-  IAbstractScene* m_owner = nullptr;
-};
 
 class IAbstractScene{
 public:
@@ -82,6 +58,7 @@ public:
     }
     m_allEntities.push_back(Entity(guid,this));
     onEntityCreated(Entity(guid,this));
+    
     return Entity(guid,this);
   }
   /**
@@ -98,10 +75,15 @@ public:
    * returns the instance Id of the component for this entity
    */
   uint32_t componentInstanceId(uint32_t entityId, Component c);
-    
+  
+
+  auto& eventBus(){
+    return m_evenBus;
+  }
 protected:
   virtual void onEntityCreated(const Entity& e) = 0;
   
+  core::eventbus::EventBus<Events> m_evenBus;
   uint32_t m_entityId = 0;
   std::unordered_map<Component,std::unordered_map<uint32_t,uint32_t>> m_componentMap; //component -> entity -> instance
   std::unordered_map<std::string,std::vector<uint64_t>> m_entityTags;
@@ -122,17 +104,6 @@ public:
 
   uint32_t createComponentInstance(uint32_t entityId, Component c) override;
   void* getComponentInstance(uint32_t entityId, Component c) override; 
-
-  template<typename T,Component TYPE>
-  void setHook(SceneHook<T>* hook){
-    if constexpr (TYPE == Camera){
-      m_cameras.hook = hook;
-    }
-    if constexpr (TYPE == Drawable){
-      m_drawables.hook = hook;
-    }
-    static_assert(true,"");
-  }
 
   template<Component C>
   const auto& componentsOfType(){
@@ -156,7 +127,7 @@ public:
     return m_cameras.iterator();
   }
 protected:
-  void onEntityCreated(const Entity& e) override; 
+  void onEntityCreated(const Entity& e); 
 
 private:
   

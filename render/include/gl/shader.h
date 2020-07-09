@@ -69,7 +69,7 @@ public:
     **/
 
     template<typename T>
-    void draw(const Transform& cameraMatrix, const Transform& modelMatrix,const T& item){
+    void draw(const glm::mat4& projection, const glm::mat4& camera, const glm::mat4& model,const T& item){
         using render::gl::VBOAttrib;
         std::string error = "";
 
@@ -78,8 +78,8 @@ public:
        
         setAttribute<4>(m_a_vertex,vertexAttrib,error);
         setAttribute<2>(m_a_uv,uvAttrib,error);
-        setUniform(m_u_cameraMatrix,cameraMatrix.transform(), error);
-        setUniform(m_u_modelMatrix,modelMatrix.transform(),error);
+        setUniform(m_u_cameraMatrix,projection*camera, error);
+        setUniform(m_u_modelMatrix,model,error);
         glDrawArrays(GL_TRIANGLES,0,vertexAttrib.count());
         _check_gl_error("Draw Arrays",error);
         

@@ -51,4 +51,5 @@ uint32_t IAbstractScene::componentInstanceId(uint32_t entityId, Component c){
   return m_componentMap[c][entityId];
 }
 
-}}
+}
+}

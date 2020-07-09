@@ -1,13 +1,11 @@
-
-
-local function Init()
-  createWindow({name="window 1",width=900,height=900}) 
-  loadScript({path="/home/oleg/Documents/projects/galacoli/game/lua/game.lua"})
-  --loadScript("/home/oleg/Documents/projects/galacoli/game/lua/game2.lua")
+local function init()
+  initRender({
+    screenWidth = 1600,
+    screenHeight = 900,
+    renderScale = 1,
+    renderBackedn = "gl"
+  })
 end
 
-local function Frame()
-end
 
-print("Hello World")
-x = 10 + 15
+init()
