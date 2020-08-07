@@ -16,10 +16,11 @@ struct LuaApi_FunctionCall{
 
 
 static void getLuaCallInfo(lua_State* state, LuaApi_FunctionCall& out){
-  void*    contextPtr;
+  void*    contextPtr = nullptr;
   lua::read_global(state,std::string("_SCRIPT"),contextPtr);
   out.context = (Context*) contextPtr;
   lua::read_struct(state,out.params);
+  assert(contextPtr != nullptr);
 }
 
 static int LuaApi_test(lua_State* lua){
@@ -73,6 +74,21 @@ static int LuaApi_initRenderContext(lua_State* lua){
   return 0; 
 }
 
+static int LuaApi_registerEventHandler(lua_State* lua){ 
+  LuaApi_FunctionCall callInfo;
+  getLuaCallInfo(lua,callInfo);
+
+  std::string event = callInfo.params["event"];
+  lua::FunctionHandle handler = callInfo.params["handler"];
+    
+  
+  callInfo.context->addLuaEventHandler(event,handler);
+  //lua_rawgeti(lua, LUA_REGISTRYINDEX, handler);
+  //lua_pcall(lua, 0, 0, 0);
+
+  return 0;
+}
+
 static int LuaApi_quit(lua_State* lua){
   LuaApi_FunctionCall callInfo;
   getLuaCallInfo(lua,callInfo);
@@ -92,6 +108,7 @@ constexpr Lua_ApiCall LuaApi[] = {
   {"loadScript",&LuaApi_loadScript},
   {"initRender",&LuaApi_initRenderContext},
   {"quit",&LuaApi_quit},
+  {"register",&LuaApi_registerEventHandler},
   {"sleep",&LuaApi_sleep}
 };
 constexpr uint8_t LuaApi_Len = sizeof(LuaApi) / sizeof(Lua_ApiCall);

@@ -15,12 +15,12 @@ template<uint64_t _T_Size>
 class Block{
 public:
   static constexpr uint64_t BUFFER_SIZE = _T_Size;
-
+  static constexpr uint64_t ERR_FULL = -1;
   template<typename T>
   uint64_t write(const T& t){
     uint64_t r = m_ptr;
-    if(r + sizeof(T) >= _T_Size){
-      return -1;
+    if(r + sizeof(T) > _T_Size){
+      return ERR_FULL;
     }
     memcpy(m_buffer+m_ptr,(uint8_t*)(&t),sizeof(T));
     m_ptr+=sizeof(T);
@@ -69,7 +69,7 @@ template<typename _T_Events>
 class EventBus{
 public:
   typedef Block<2048> EventBlock;
-
+  
   void addListener(Listener l){
     m_listeners.push_back(l);
   }
@@ -92,7 +92,7 @@ public:
     Event<T> e   = {id,event};
     uint64_t ptr = m_tail->write(e);
     
-    if(ptr < 0){
+    if(ptr == EventBlock::ERR_FULL){
       m_tail = m_tail->next();
       send(event);
     }else{
@@ -103,11 +103,11 @@ public:
 
   void flush(){
     EventBlock* iterator  = m_head;
-    uint64_t    lastPtr   = 0;
+    uint64_t    lastPtr   = -1;
 
     for(uint64_t i = 0; i < m_eventPtrs.size(); i++){
       uint64_t ptr = m_eventPtrs[i];
-      if(ptr < lastPtr){
+      if(ptr <= lastPtr && lastPtr != -1){
         iterator->clear();
         iterator = iterator->next();  
       }

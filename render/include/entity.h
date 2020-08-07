@@ -25,7 +25,8 @@ public:
   
   template<typename T>
   void foreachComponent(T&& out){
-    for(Component c : ComponentTypeList){
+    for(size_t i = 0; i < ComponentDescriptors_Length; i++){
+      Component c = ComponentDescriptors[i].id;
       if(hasComponent(c)){
         out(c,m_owner->getComponentInstance(m_globalId,c));
       }

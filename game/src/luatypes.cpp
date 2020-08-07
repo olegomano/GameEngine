@@ -2,4 +2,3 @@
 #include "camera.h"
 #include "drawable.h"
 
-template<render::>

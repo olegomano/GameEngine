@@ -6,6 +6,7 @@
 #include <GL/glew.h>
 #include <atomic>
 #include <functional>
+#include <tuple>
 
 #include "primitives.h"
 #include "core.h"
@@ -18,7 +19,16 @@ class Context {
 public: 
   typedef std::variant<int,float>                Event;
   typedef std::function<void(const Event&)>      EventCallback;
- 
+  
+  /**
+   * Lists of lua Event Handlers
+   */
+  struct LuaHandlers{
+    std::vector<lua::FunctionHandle> frameHandlers;
+    std::vector<lua::FunctionHandle> entityCreationHandlers;
+    std::vector<lua::FunctionHandle> keyboardHandlers;
+  };
+
   Context();
   void loopForever();
   void stopLooping();
@@ -75,13 +85,15 @@ public:
   void addInitScript(const std::string& path){
     m_initScript.push_back(path);
   }
+  
   /*
    * Adds a callback to different game events 
    */
-  void addEventCallback(uint32_t event);
+  void addLuaEventHandler(const std::string& event, const lua::FunctionHandle& h);
 
   inline lua::LuaContext&                luaContext()     {return m_luaContext;}
 private:
+  void handleEntityCreatedEvent(uint64_t eventId, void* entity);
   void onGLContextInit();
   
   SDLWindowManager        m_windowManager;
@@ -90,9 +102,10 @@ private:
   
   std::vector<std::string>                           m_initScript;
   std::unordered_map<uint32_t,render::scene::Entity> m_windowCameras;
-  core::task_que::TaskQue<std::function<void()>>     m_tasks;
   
-  std::vector<lua::MappedObject<render::scene::Entity>> m_sharedLuaObjects;
+  core::task_que::TaskQue<std::function<void()>>     m_tasks;
+  std::vector<std::tuple<lua::LuaVar,render::scene::Entity>> m_luaEntities;
+  LuaHandlers                                       m_luaHandlers;
 
   bool m_isRenderInit = false;
 

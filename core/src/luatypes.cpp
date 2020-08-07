@@ -93,28 +93,53 @@ void lua::read_struct<std::vector<std::string>>(lua_State* lua, std::vector<std:
   }  
 }
 
+
+template<>
+int lua::push_struct<lua::FlatTableItem>(lua_State* lua, const lua::FlatTableItem& item){
+  item.visit([&](auto args...){
+    lua::push_struct(lua,args);
+  });
+  return 1;
+}
+
+
+template<>
+int lua::push_struct<lua::FlatTable>(lua_State* lua, const lua::FlatTable& table){
+  for(lua::FlatTable::const_iterator iter = table.begin(); iter != table.end(); ++iter){
+    const std::string& key = iter->first;
+    const lua::FlatTableItem& value = iter->second;
+    lua::push_struct(lua,key);
+    lua::push_struct(lua,value);
+    lua_settable(lua,-3);
+  }  
+  return 1;
+}
+
 template<>
 void lua::read_struct<lua::FlatTable>(lua_State* lua, lua::FlatTable& out){
   lua_pushnil(lua);
   while(lua_next(lua,-2)){
     int valueType = lua_type(lua,-1);
     std::string keyName = lua_tostring(lua,-2);
-
     switch(valueType){
     case LUA_TFUNCTION:
+      out[keyName] = (uint32_t)luaL_ref(lua,LUA_REGISTRYINDEX);
       break;
     case LUA_TSTRING:
       out[keyName] = lua_tostring(lua,-1);
+      lua_pop(lua,1);
       break;
-    case LUA_TNUMBER:
+    case LUA_TNUMBER:   
       out[keyName] = lua_tonumber(lua,-1);
+      lua_pop(lua,1);
       break;
     case LUA_TBOOLEAN:
+      lua_pop(lua,1);
       break;
     default:
+      lua_pop(lua,1);
       break;
     }
-    lua_pop(lua,1);
   }
   lua_pop(lua,1);
 }
