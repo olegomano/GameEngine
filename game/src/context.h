@@ -6,6 +6,7 @@
 #include <GL/glew.h>
 #include <atomic>
 #include <functional>
+#include <tuple>
 
 #include "primitives.h"
 #include "core.h"
@@ -82,6 +83,7 @@ public:
 
   inline lua::LuaContext&                luaContext()     {return m_luaContext;}
 private:
+  void handleEntityCreatedEvent(uint64_t eventId, void* entity);
   void onGLContextInit();
   
   SDLWindowManager        m_windowManager;
@@ -91,8 +93,8 @@ private:
   std::vector<std::string>                           m_initScript;
   std::unordered_map<uint32_t,render::scene::Entity> m_windowCameras;
   core::task_que::TaskQue<std::function<void()>>     m_tasks;
-  
-  std::vector<lua::MappedObject<render::scene::Entity>> m_sharedLuaObjects;
+    
+  std::vector<std::tuple<lua::LuaVar,render::scene::Entity>> m_luaEntities;
 
   bool m_isRenderInit = false;
 

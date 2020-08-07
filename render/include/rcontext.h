@@ -15,7 +15,7 @@ public:
   virtual void render() = 0;
   virtual scene::Entity createPrimitive(render::primitive::Type t) = 0;
   virtual scene::Entity createCamera(uint32_t w, uint32_t h) = 0;
-  virtual void setEventListener(core::eventbus::Listener l) = 0;  
+  virtual void addEventListener(core::eventbus::Listener l) = 0;  
   virtual void handleEvents() = 0;
 };
 
@@ -40,7 +40,7 @@ public:
     m_primitives.create();  
   }
 
-  void setEventListener(core::eventbus::Listener l) override {
+  void addEventListener(core::eventbus::Listener l) override {
     m_scene.eventBus().addListener(l);
   }
 

@@ -40,9 +40,10 @@ void Scene<_T_Context>::onEntityCreated(const Entity& e){
   if( !e.hasComponent(Component::Transform) ) return;
   uint32_t transformIndex = m_componentMap[Transform][e.entityId()];
 
-  for(int i = 0; i < ComponentTypeList.size(); i++){
-    if(e.hasComponent(ComponentTypeList[i]) && ComponentTypeList[i] != Component::Transform){
-      m_sceneGraph.linkTransform(transformIndex,m_componentArrayMap[ComponentTypeList[i]],m_componentMap[ComponentTypeList[i]][e.entityId()]);
+  for(size_t i = 0; i < ComponentDescriptors_Length; i++){
+    Component c = ComponentDescriptors[i].id;
+    if(e.hasComponent(c) && c != Component::Transform){
+      m_sceneGraph.linkTransform(transformIndex,m_componentArrayMap[c],m_componentMap[c][e.entityId()]);
     }
   }
 }

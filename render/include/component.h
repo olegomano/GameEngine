@@ -15,11 +15,41 @@ namespace render{
 namespace scene{
 
 enum Component : uint32_t{
+  Error = 0,
   Drawable = 1,
   Camera = 1<<2,
   Transform = 1<<3
 };
-constexpr std::array<Component,3> ComponentTypeList = {Drawable,Camera,Transform};
+
+struct ComponentDescriptor{
+  Component   id;
+  const char* name;
+};
+
+constexpr ComponentDescriptor ComponentDescriptors[] ={
+  {Drawable,"Drawable"},
+  {Camera,"Camera"},
+  {Transform,"Transform"}
+}; 
+constexpr size_t ComponentDescriptors_Length = sizeof(ComponentDescriptors) / sizeof(ComponentDescriptor);
+
+template<Component T>
+constexpr ComponentDescriptor descriptor(){
+  if constexpr (T == Component::Drawable){
+    return ComponentDescriptors[0];
+  }
+  else if constexpr (T == Component::Camera){
+    return ComponentDescriptors[1];
+  }
+  else if constexpr (T == Component::Transform){
+    return ComponentDescriptors[2];
+  }else{
+    return {Error,"Error"};
+  }
+
+
+
+}
 
 std::ostream& operator << (std::ostream& out, const Component& c);
 

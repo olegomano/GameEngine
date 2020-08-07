@@ -16,10 +16,11 @@ struct LuaApi_FunctionCall{
 
 
 static void getLuaCallInfo(lua_State* state, LuaApi_FunctionCall& out){
-  void*    contextPtr;
+  void*    contextPtr = nullptr;
   lua::read_global(state,std::string("_SCRIPT"),contextPtr);
   out.context = (Context*) contextPtr;
   lua::read_struct(state,out.params);
+  assert(contextPtr != nullptr);
 }
 
 static int LuaApi_test(lua_State* lua){

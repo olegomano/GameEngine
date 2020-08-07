@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <assert.h>
+#include <type_traits> 
 extern "C"{
     #include <lua.h>
     #include <lualib.h>
@@ -20,6 +21,19 @@ class FlatTableItem : public _V_FlatTableItem{
 public:
   using _V_FlatTableItem::_V_FlatTableItem;
   using _V_FlatTableItem::operator=;
+  
+  template<typename T>
+  void visit(const T& f) const {
+    int indx = index();
+    if(indx == 0){
+      f(std::get<double>(*this) );
+    }else if(indx == 1){
+      f(std::get<std::string>(*this) ); 
+    }else{
+      assert(false);
+    }
+  }
+
   operator int(){
     return std::get<double>(*this);
   }
@@ -51,21 +65,69 @@ typedef std::map<std::string,FlatTableItem> FlatTable;
 template<typename T>
 int push_struct(lua_State* lua, const T& data);
 
+
 template<typename T>
 void read_struct(lua_State* lua, T& out);
 
+/*
+ * gets the item at index in table
+ * table is assumed to be on top of the stack
+ * leaves table at the top of the stack
+ */
+template<typename T>
+void get_list_item(lua_State* lua, uint32_t index, T& data){
+  lua_rawgeti(lua,-1,index);
+  read_struct(lua,data);
+}
+
+/*
+ * assumes table is on top of the stack
+ */
 template<typename T>
 void set_table_item(lua_State* lua, const std::string& name, const T& value){
   push_struct(lua,name);
   push_struct(lua,value);
   lua_settable(lua,-3);
 }
+  /**
+  * assumes stack[-1] is data
+  * assumes stack[-2] is table
+   * returns the key of the data
+  */
+inline uint32_t append_list(lua_State* lua, bool empty = false){
+  size_t index = lua_rawlen(lua,-2) + 1;  
+  lua_rawseti(lua,-2,index);
+  if(empty){
+    lua_pop(lua,1);
+  }
+  return index;
+}
 
 template<typename T>
-void read_global(lua_State* lua,const std::string name, T& out){
+constexpr bool is_primitive(){
+  if constexpr ( 
+         std::is_same<T,std::string>::value 
+      || std::is_fundamental<T>::value 
+      || std::is_same<T,void*>::value
+      ){
+    return true;
+  }
+  return false;
+}
+
+template<typename T>
+void read_global(lua_State* lua,const std::string& name, T& out){
+  cprint_debug("LuaContext") << "Reading Global " << name << std::endl;
   lua_getglobal(lua,name.c_str());
   read_struct(lua,out);
   lua_pop(lua,1);
+}
+
+template<typename T>
+void write_global(lua_State* lua, const std::string& name, const T& out){
+  push_struct(lua,out);
+  lua_setglobal(lua,name.c_str());
+  //lua_pop(lua,1); 
 }
 
 } //NAMESPACE lua
@@ -93,52 +155,65 @@ public:
     out << (void*)(var.m_context) << " " << var.m_ref;
     return out;
   }
+  
   LuaVar(){}
   LuaVar(const LuaVar& other){
     m_context = other.m_context;
     m_ref     = other.m_ref;
+    m_global  = other.m_global;
   }
+  
   LuaVar(const LuaVar&& other){
     m_context = other.m_context;
     m_ref     = other.m_ref;
+    m_global  = other.m_global;
   }
   
   LuaVar& operator=(const LuaVar& other){
     m_ref = other.m_ref;
     m_context = other.m_context;
+    m_global  = other.m_global;
     return *this;
   }
 
-  LuaVar(LuaContext* context,uint32_t ref){
+  LuaVar(LuaContext* context,uint32_t ref,bool global){
     m_context = context;
     m_ref     = ref;
+    m_global  = global;
   }
 
   uint32_t index() const {return m_ref;}
+ 
+  bool isGlobal() {return m_global;}
 
   template<typename T>
-  void write(const T& data);
+  void write(const T& data) const;
 
   template<typename T>
-  void read(T& out);
+  void read(T& data) const;
+  
+  void load() const;
+
 private:
   LuaContext* m_context = nullptr;
   uint32_t    m_ref     = -1;
+  bool        m_global  = false;
 };
 
 class LuaContext{
 public:
-  static constexpr char* _INDEX_TABLE = "_INDEX_TABLE";
-  static constexpr char* _LUA_ID      = "_ID";
+  static constexpr char* _INDEX_TABLE  = "_INDEX_TABLE";
+  static constexpr char* _GLOBAL_TABLE = "_GLOBAL_TABLE";
   
-  void init(uint32_t id){
+ void init(uint32_t id){
     m_id = id;  
     m_lua = luaL_newstate();
-    luaL_openlibs(m_lua);    
-    
-    createGlobal(std::string(_LUA_ID),id);
+    luaL_openlibs(m_lua);
+
     lua_newtable(m_lua);
     lua_setglobal(m_lua,_INDEX_TABLE);
+    lua_newtable(m_lua);
+    lua_setglobal(m_lua,_GLOBAL_TABLE);
   }
 
   bool loadBuffer(const uint8_t* buffer, uint32_t len,std::ostream& out = std::cout){
@@ -172,130 +247,123 @@ public:
   void registerFunction(const std::string& name, lua_CFunction function){
     lua_register(m_lua,name.c_str(),function);
   }
-
+  
+    /*
+   *creates type T and puts it at the top of the stack
+   */
   template<typename T>
-  void createGlobal(const std::string& name, const T& value);
+  void allocate(){
+    if constexpr (is_primitive<T>()){
+      T t = {};
+      lua::push_struct(m_lua,t);
+    }else{
+      lua_newtable(m_lua);
+    }
+  }
+    /*
+  * creates a var and adds it to approrite list
+  * leaves it at the top of the stack
+  */
+  template<typename T>
+  LuaVar createVar(bool global, const std::string& globalName = ""){
+    if(global){
+      cprint_debug("Lua") << "Creating global variable " << globalName << std::endl;
+    }
+    uint32_t indx = -1;
+    const std::string& table = global ? _GLOBAL_TABLE : _INDEX_TABLE;
+    
+    std::cout << "createVar::start" <<std::endl;
+    stackDump(m_lua);
+
+    lua_getglobal(m_lua,table.c_str());
+    allocate<T>();
+    indx = append_list(m_lua);
+
+    LuaVar var = LuaVar(this,indx,global);
  
-  template<typename T>
-  void readGlobal(const std::string& name, T& out);
-
-  template<typename T>
-  LuaVar createVar(const T& data);
-
-  LuaVar declareVar(){
-    uint32_t index = m_allVars.size() + 1;
-    LuaVar var = LuaVar(this,index);
-
-    lua_getglobal(m_lua,_INDEX_TABLE);
-    lua_pushnumber(m_lua,index);
-    lua_newtable(m_lua);
-    lua_settable(m_lua,-3);
-
+    if(global){
+      lua_rawgeti(m_lua,-1,indx);
+      lua_setglobal(m_lua,globalName.c_str());
+      m_globalVars.push_back(var);
+    }else{
+      m_allVars.push_back(var);
+    }
     lua_pop(m_lua,1);
-    m_allVars.push_back(var);
+
+    std::cout << "createVar::end " << indx << std::endl;
+    stackDump(m_lua);
+
     return var;
   }
 
   template<typename T>
-  void readVar(LuaVar var,T& out);
+  void read(LuaVar var,T& out){
+    load(var);
+    read_struct(m_lua,out);
+  }
 
   template<typename T>
-  void writeVar(LuaVar var, const T& out);
-  
+  void write(LuaVar var, const T& data) const{
+    if constexpr (is_primitive<T>()){
+      const std::string& table = var.isGlobal() ? _GLOBAL_TABLE : _INDEX_TABLE;
+      lua_getglobal(m_lua,table.c_str());
+      push_struct(m_lua,data);
+      lua_rawseti(m_lua,-2,var.index());
+    }else{
+      load(var);
+      push_struct(m_lua,data);
+    }
+    lua_pop(m_lua,1);
+    stackDump(m_lua);
+  }
+
   /*
    * puts var at top of lua stack
    */
-  void loadVar(LuaVar var){
-    cprint_debug(LOG_TAG) << "loadVar " << var << std::endl;
-    lua_getglobal(m_lua,_INDEX_TABLE);
-    stackDump(m_lua);
-    lua_pushnumber(m_lua,var.index());
-    stackDump(m_lua);
-    lua_gettable(m_lua,-2);
-    stackDump(m_lua);
+  void load(LuaVar var) const {
+    const std::string& table = var.isGlobal() ? _GLOBAL_TABLE : _INDEX_TABLE;
+    lua_getglobal(m_lua,table.c_str());
+    lua_pushnumber(m_lua,var.index()); //todo replace with get_list_item
+    lua_gettable(m_lua,-2); 
+    lua_remove(m_lua,-2);
+  }
+  
+  /*
+   * puts a global with name on top of the stack
+   */
+  void load(const std::string& globalName){
+    lua_getglobal(m_lua,globalName.c_str());
   }
 
   uint32_t id() const;
-
+  
+  lua_State* lua() {return m_lua;}
 private:
-  lua_State*          m_lua;
-  uint32_t            m_id;
-  std::vector<LuaVar> m_allVars;
+  lua_State*                   m_lua;
+  uint32_t                     m_id;
+  std::vector<LuaVar>          m_allVars;
+  std::vector<LuaVar>          m_globalVars;
 };
 
-template<typename T>
-LuaVar LuaContext::createVar(const T& out){
-  LuaVar var = declareVar();
-  writeVar(var,out);
-  return var;
-}
-
 
 template<typename T>
-void LuaContext::readVar(LuaVar var,T& out){  
-  loadVar(var);
-  read_struct(m_lua,out);
-  lua_pop(m_lua,1);
-}
-
-template<typename T>
-void LuaContext::writeVar(LuaVar var, const T& data){
-  loadVar(var);
-  lua::push_struct(m_lua,data);
-  lua_pop(m_lua,1);
-}
-
-template<typename T>
-void LuaContext::createGlobal(const std::string& name, const T& value){
-  push_struct(m_lua,value);
-  lua_setglobal(m_lua,name.c_str());
-}
-
-template<typename T>
-void LuaContext::readGlobal(const std::string& name, T& out){
-  read_global(m_lua,name,out);
-}
-
-
-
-template<typename T>
-void LuaVar::write(const T& data){
+inline void LuaVar::write(const T& data) const{
   assert(m_context != nullptr);
-  m_context->writeVar(*this,data);
+  m_context->write(*this,data);
 }
 
 template<typename T>
-void LuaVar::read(T& out){
+inline void LuaVar::read(T& data) const {
   assert(m_context != nullptr);
-  m_context->readVar(*this,out);
+  m_context->read(*this,data);
 }
-
-class IMappedObject{
-  virtual void read() = 0;
-  virtual void write() = 0;
+  
+inline void LuaVar::load() const {
+  assert(m_context != nullptr);
+  m_context->load(*this);
 };
 
-template<typename T>
-class MappedObject : public IMappedObject{
-public:
-  MappedObject(lua::LuaContext& context,T& ptr) : m_data(ptr) {
-    m_luaVar = context.declareVar();
-  }
 
-  T* operator ->(){
-    return &m_data;
-  } 
-  void read() override {
-    m_luaVar.read(m_data);  
-  }
-
-  void write() override {
-    m_luaVar.write(m_data);
-  }
-private:
-  T                m_data;
-  lua::LuaVar      m_luaVar;
-};
 
 }
 #undef LOG_TAG

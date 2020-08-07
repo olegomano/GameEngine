@@ -7,6 +7,7 @@
 #include <csignal>
 
 bool Running = true;
+Context context;    
 
 void signalHandler(int sig){
   Running = false;
@@ -16,7 +17,6 @@ const char* str = "print a";
 int main(int argc,char** argv){
   signal(SIGINT,signalHandler);
 
-  Context context;    
   
   if(argc > 1){
     std::string workdir = std::string(argv[0]);
@@ -40,9 +40,10 @@ int main(int argc,char** argv){
     std::getline(std::cin,line);
     auto function = &Context::loadLuaBuffer;
     context.runAsync( function, latch,line );
-    latch.pass();
+    //latch.pass();
     //   context.loadLua((const uint8_t*)"print(a)",8);
-  }  
+  }
+  std::cout << "Closing" << std::endl;
   return 0;
 
 }

@@ -16,12 +16,21 @@ void Context::init(){
     cprint_debug(LOG_TAG) << "Registering Function " << LuaApi[i].name << std::endl;
     m_luaContext.registerFunction(LuaApi[i].name,LuaApi[i].call);
   }
-  m_luaContext.createGlobal("_SCRIPT",(void*)this);
+  lua::LuaVar self = m_luaContext.createVar<void*>(true,"_SCRIPT");
+  lua::write_global<void*>(m_luaContext.lua(),"_SCRIPT",this);
+
+  for(int i = 0; i < render::scene::ComponentDescriptors_Length; i++){
+    const render::scene::ComponentDescriptor& d = render::scene::ComponentDescriptors[i];
+    //m_luaContext.createGlobal(d.name,lua::FlatTable());
+    m_luaContext.createVar<lua::FlatTable>(true,d.name);
+  }
+
   for(const std::string& path : m_initScript){
     core::file::File f = core::file::File(path);
     f.load();
     m_luaContext.loadBuffer(f.data(),f.size());
   }
+
 }
 
 
@@ -42,7 +51,8 @@ void Context::initRendering(uint32_t screenW, uint32_t screenH, float renderScal
     return;
   }
   m_glRenderContext->create();
-    
+  m_glRenderContext->addEventListener(std::bind(&Context::handleEntityCreatedEvent,this,std::placeholders::_1,std::placeholders::_2));
+
   render::scene::Entity camera = m_glRenderContext->createCamera(window->width()*renderScale,window->height()*renderScale);
   camera.getComponent<render::ICamera>().setFov(1,(float)screenW/(float)screenH);
   m_windowCameras[window->id()] = camera;
@@ -52,6 +62,41 @@ void Context::initRendering(uint32_t screenW, uint32_t screenH, float renderScal
 
 void Context::onGLContextInit(){
 
+}
+
+void Context::handleEntityCreatedEvent(uint64_t eventId, void* ptr){
+  render::scene::Entity entity = *((render::scene::Entity*)ptr);
+  uint32_t index = -1;
+
+  if(eventId == render::scene::Events::ENTITY_CREATED){
+    cprint_debug(LOG_TAG) << "Entity Created " << eventId << " " << entity.entityId() << std::endl; 
+    entity.foreachComponent(
+      [&](render::scene::Component c, void* ptr) mutable {
+      switch(c){    
+      
+      case render::scene::Component::Drawable:{
+    
+      }break;
+      case render::scene::Component::Camera:{
+        cprint_debug(LOG_TAG) << "Creating Lua Camera " << std::endl;
+
+        render::ICamera* c = (render::ICamera*) ptr;
+        Transform t = entity.getComponent<Transform>(); 
+        lua::LuaVar transformVar = m_luaContext.createVar<Transform>(false);
+        transformVar.write(t);
+        m_luaContext.load(render::scene::descriptor<render::scene::Component::Camera>().name);
+        transformVar.load();
+        index = lua::append_list(m_luaContext.lua(),true);
+        m_luaEntities.push_back( std::make_tuple(transformVar,entity) );
+
+      }break;
+        
+      default:
+      break; 
+      }
+    
+    }); 
+  }
 }
 
 void Context::loadLuaFile(const std::string& name){
@@ -118,6 +163,13 @@ void Context::loopForever(){
     }
     m_tasks.run();  
     m_glRenderContext->handleEvents(); 
+    
+    for(const auto& iter : m_luaEntities){
+      const lua::LuaVar& var = std::get<0>(iter);
+      render::scene::Entity entity = std::get<1>(iter);
+      var.read(entity.getComponent<Transform>());
+    }
+  
     /**
      * Draws every camera to a texture
      */
