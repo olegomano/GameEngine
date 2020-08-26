@@ -70,7 +70,7 @@ void render::Primitives::init(){
         int counter = 0;
         for(int i = 0; i < length(Primitive_List); i++){  
             const Primitive& prim = Primitive_List[i];
-    //        std::cout << "Initializing Primitive " << prim.name << " size " << prim.size << " offset " << counter << std::endl;
+            std::cout << "Initializing Primitive " << prim.name << " size " << prim.size << " offset " << counter << std::endl;
             
             memcpy((float*)buffer + counter,prim.data,prim.size);
             render::gl::Drawable& d = prim.drawable;

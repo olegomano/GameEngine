@@ -1,7 +1,8 @@
-#include "../include/shader.h"
-#include "../include/utils.h"
+#include "../include/gl/shader.h"
+#include "../include/gl/utils.h"
 #include <vector>
 #include <glm/glm.hpp>
+#include <glm/ext.hpp>
 
 void Shader::enable(){
     std::string error = "";
@@ -89,7 +90,7 @@ bool Shader::bindAttribute(GLuint program,GLuint& attr,const std::string& name, 
 
 template<>
 bool Shader::setUniform<glm::mat4>(GLuint uniform, const glm::mat4& data, std::string& error){
-    glUniformMatrix4fv(uniform,1,false,&data[0][0]);
+    glUniformMatrix4fv(uniform,1,false,glm::value_ptr(data));
     return _check_gl_error("Failed tp Set Matrix Uniform ",error);
 }
 

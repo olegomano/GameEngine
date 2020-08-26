@@ -1,20 +1,20 @@
 #ifndef _TYPES_H_
 #define _TYPES_H_
 #include "core.h"
-#include "renderer.h"
+#include <vector>
+#include <variant>
 
-struct Drawable{
-    Transform             position;
-    render::gl::VBOAttrib normals;
-    render::gl::VBOAttrib vertex;
+
+//core should define some kind of standard pointer type so i can have an array of it here
+//IPtr -> Ptr<T>
+class Drawable {
+public:
+  static constexpr const char* const LuaX = "x";
+  static constexpr const char* const LuaY = "y";
+  static constexpr const char* const LuaZ = "z";
 };
 
-struct LuaEntity{
-    lua::LuaRef luaState;
-    Transform   transform;
-    
-    void update();  
-};
+
 
 
 #endif

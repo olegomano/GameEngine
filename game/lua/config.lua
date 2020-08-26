@@ -1,7 +1,11 @@
+local function init()
+  initRender({
+    screenWidth = 1600,
+    screenHeight = 900,
+    renderScale = 1,
+    renderBackedn = "gl"
+  })
+end
 
-return {
-    width   = 1200,
-    height  = 800,
-    name    = "Game",
-    scripts = {"luascript.cpp","luascript.cpp"}
-}
+
+init()

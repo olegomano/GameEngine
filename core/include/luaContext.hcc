@@ -1,0 +1,73 @@
+//#ifndef _CORE_LUA_CONTEXT_H_
+//#define _CORE_LUA_CONTEXT_H_
+using namespace lua;
+
+template<typename T>
+void LuaVar::write(const T& data){
+  assert(m_context != nullptr);
+  m_context->writeVar(*this,data);
+}
+
+template<typename T>
+void LuaVar::read(T& data){
+  assert(m_context != nullptr);
+  m_context->readVar(*this,data);
+}
+
+void LuaVar::load(){
+  assert(m_context != nullptr);
+  m_context->load(*this);
+}
+
+template<typename T>
+void LuaContext::allocate(){
+  if constexpr (std::is_fundamental<T>::value || std::is_same<T,std::string>::value){
+    T t = {};
+    lua::push_struct(m_lua,t);
+  }else{
+    lua_newtable(m_lua);
+  }
+}
+
+
+template<typename T>
+LuaVar LuaContext::createVar(bool global, const std::string& globalName){
+  uint32_t indx = -1;
+  const std::string& table = global ? _GLOBAL_TABLE : _INDEX_TABLE;
+  
+  lua_getglobal(m_lua,table.c_str());
+  allocate<T>();
+  indx = append_list(m_lua); 
+  LuaVar var =LuaVar(this,indx,global);
+  if(global){
+    lua_rawgeti(m_lua,-1,indx);
+    lua_setglobal(m_lua,globalName.c_str());
+    m_globalVars.push_back(var);
+  }else{
+    m_allVars.push_back(var);
+  }
+  lua_pop(m_lua,1);
+  return var;
+}
+
+void LuaContext::load(LuaVar var){
+  const std::string& table = var.isGlobal() ? _GLOBAL_TABLE : _INDEX_TABLE;
+  lua_getglobal(m_lua,table.c_str());
+  lua_pushnumber(m_lua,var.index());
+  lua_gettable(m_lua,-2); 
+}
+
+template<typename T>
+void LuaContext::readVar(LuaVar var,T& out){  
+  load(var);
+  read_struct(m_lua,out);
+  lua_pop(m_lua,1);
+}
+
+template<typename T>
+void LuaContext::writeVar(LuaVar var, const T& data){
+  load(var);
+  lua::push_struct(m_lua,data);
+  lua_pop(m_lua,1);
+}
+//#endif

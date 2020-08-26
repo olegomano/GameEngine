@@ -1,4 +1,4 @@
-#include "../include/shader.h"
+#include "../include/gl/shader.h"
 #include <string>
 #include <iostream>
 
@@ -9,15 +9,21 @@ static constexpr char* const vertex_shader =
 "uniform vec4 u_color;"
 "in vec4 a_vertex;"
 "in vec4 a_normal;"
+"in vec2 a_uv;"
+"out vec2 a_uv_frag;"
 "void main() {"
-"  gl_Position = u_model * a_vertex;"
+"  gl_Position = u_camera * ( u_model * a_vertex );"
+"  gl_Position.w = gl_Position.z;"
+"  gl_Position.z = (gl_Position.z - 1)/100;"
+"  a_uv_frag = a_uv;"
 "}";
 
 static constexpr char* const fragment_shader =
 "#version 400\n"
+"in vec2 a_uv_frag;"
 "out vec4 frag_colour;"
-"void main() {"
-"  frag_colour = vec4(0.5, 0.0, 0.5, 1.0);"
+"void main() {" 
+"  frag_colour = vec4(a_uv_frag.x,a_uv_frag.y,1,1.0);"
 "}";
 
 
@@ -38,7 +44,7 @@ void ColorShader::compile(){
         
     bindAttribute(m_program,m_a_vertex,"a_vertex",error);
     bindAttribute(m_program,m_a_normal,"a_normal",error);
-
+    bindAttribute(m_program,m_a_uv,"a_uv",error);
     if(error.size() > 0){
         std::cout << "Failed to compile ColorShader " << std::endl << error << std::endl; 
     }

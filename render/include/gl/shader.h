@@ -5,8 +5,8 @@
 #include <string>
 #include <initializer_list>
 #include <vector>
-#include "transform.h"
-#include "vbo.h"
+#include "../transform.h"
+#include "buffer.h"
 #include <core.h>
 
 class Shader{
@@ -26,7 +26,7 @@ protected:
     
     template<int ELEMENTS>
     bool setAttribute(GLuint attribute, const render::gl::VBOAttrib& attrib, std::string& error){
-        glBindBuffer(GL_ARRAY_BUFFER, attrib.owner()->handle());
+        glBindBuffer(GL_ARRAY_BUFFER, attrib.ownerVBO()->handle());
         _check_gl_error("Failed to bind buffer ",error);
         glVertexAttribPointer(attribute, ELEMENTS, GL_FLOAT, GL_FALSE, attrib.stride(), (void*)attrib.offset());
         return _check_gl_error("Failed to set attribute ",error);
@@ -41,21 +41,23 @@ class ColorShader : public Shader{
 public:
     ColorShader(){
         m_uniforms   = {&m_u_color,&m_u_modelMatrix,&m_u_cameraMatrix};
-        m_attributes = {&m_a_vertex,&m_a_normal};
+        m_attributes = {&m_a_vertex,&m_a_uv};
     }
     
     void compile();
-
+    
+    /**
     template<typename T>
-    void draw(const T&& item){
+    void draw(const Transform& cameraMatrix, const Transform& modelMatrix, const T&& item){
         using render::gl::VBOAttrib;
         std::string error = "";
 
-        Transform modelMatrix  = item.position;
+        ///Transform modelMatrix  = item.position;
         VBOAttrib vertexAttrib = item.vertex;
-        VBOAttrib normalAttrib = item.normals;    
+        VBOAttrib uvAttrib = item.uv;    
         
         setAttribute<4>(m_a_vertex,vertexAttrib,error);
+        setAttribute<2>(m_a_uv,uvAttrib,error);
         setUniform(m_u_modelMatrix,modelMatrix.transform(),error);
         glDrawArrays(GL_TRIANGLES,0,vertexAttrib.count());
         _check_gl_error("Draw Arrays",error);
@@ -64,21 +66,23 @@ public:
             std::cout << "ERROR: color shader " << std::endl << error << std::endl;
         }
     }
+    **/
 
     template<typename T>
-    void draw(const T& item){
+    void draw(const glm::mat4& projection, const glm::mat4& camera, const glm::mat4& model,const T& item){
         using render::gl::VBOAttrib;
         std::string error = "";
 
-        Transform modelMatrix  = item.position;
-        VBOAttrib vertexAttrib = item.vertex;
-        VBOAttrib normalAttrib = item.normals;    
+        VBOAttrib vertexAttrib = item.vertex; 
+        VBOAttrib uvAttrib = item.uv;    
        
         setAttribute<4>(m_a_vertex,vertexAttrib,error);
-        setUniform(m_u_modelMatrix,modelMatrix.transform(),error);
+        setAttribute<2>(m_a_uv,uvAttrib,error);
+        setUniform(m_u_cameraMatrix,projection*camera, error);
+        setUniform(m_u_modelMatrix,model,error);
         glDrawArrays(GL_TRIANGLES,0,vertexAttrib.count());
         _check_gl_error("Draw Arrays",error);
-
+        
         if(error.size() > 0){
             std::cout << "ERROR: color shader " << std::endl << error << std::endl;
         }
@@ -94,6 +98,7 @@ private:
 
     GLuint m_a_vertex;
     GLuint m_a_normal;
+    GLuint m_a_uv;
 };
 
 

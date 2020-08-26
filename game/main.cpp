@@ -1,26 +1,49 @@
 #include <iostream>
 #include <string>
 #include "src/context.h"
-#include "src/config.h"
+#include <utils.h>
+#include "src/types.h"
+#include <thread>
+#include <csignal>
 
+bool Running = true;
+Context context;    
+
+void signalHandler(int sig){
+  Running = false;
+}
+
+const char* str = "print a";
 int main(int argc,char** argv){
-    std::string config(argv[1]);
-    lua::Script configScript(config);
-    configScript.load();
-    
-    ContextConfig rootConfig;
-    rootConfig.parse(configScript.root());
-    
-    std::cout << rootConfig << std::endl;
+  signal(SIGINT,signalHandler);
 
-    Context context;
-    context.addScripts(rootConfig.scripts());
-    context.init();
-    for(int i =0; i < 2;i++){
-      auto& tris = context.renderer().createDrawable(context.renderPrims()[render::Primitives::Triangle]);    
-      tris.position.setPosition(i*0.125,0,0);
-      tris.position.scale(0.125f);
+  
+  if(argc > 1){
+    std::string workdir = std::string(argv[0]);
+    for(int i = 1; i < argc; i++){
+      std::string filepath = std::string(argv[i]);
+      std::cout << "Adding init script " << filepath << std::endl;
+      context.addInitScript(filepath);
     }
-    context.loopForever();
-    return 0;
+  }  
+    
+  std::thread thread([&]{
+    context.init();
+    context.loopForever();   
+    Running = false;
+  });
+  
+  std::string line;
+  core::Latch latch;
+  while(Running){
+    std::cin.clear();
+    std::getline(std::cin,line);
+    auto function = &Context::loadLuaBuffer;
+    context.runAsync( function, latch,line );
+    //latch.pass();
+    //   context.loadLua((const uint8_t*)"print(a)",8);
+  }
+  std::cout << "Closing" << std::endl;
+  return 0;
+
 }
