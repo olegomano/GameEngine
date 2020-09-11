@@ -41,10 +41,10 @@ public:
    *create an entity that contains componentList components
    */
   template<typename T>
-  Entity createEntity(const T& componentList){
+  Entity createEntity(const T& componentList,uint32_t contextId = -1){
     uint32_t entityId = ++m_entityId;
     uint64_t guid = entityId;
-    cprint_debug("Scene") << "Creating new Entity " << entityId << std::endl;
+    cprint_debug("Scene") << "Creating new Entity " << entityId << " Context Id: " << contextId << std::endl;
 
     for(const Component& c : componentList){
       uint32_t instanceId = createComponentInstance(entityId,c);
@@ -56,11 +56,14 @@ public:
       m_componentMap[c][entityId] = instanceId;
       guid |= ((uint64_t)(c) << 32);
     }
-    m_allEntities.push_back(Entity(guid,this));
-    onEntityCreated(Entity(guid,this));
-    m_eventBus.send<Events::EntityCreated>( {Entity(guid,this)} ); 
-    return Entity(guid,this);
+    Entity e = Entity(guid,contextId,this);
+
+    m_allEntities.push_back(e);
+    onEntityCreated(e);
+    m_eventBus.send<Events::EntityCreated>( {e} ); 
+    return e;
   }
+
   /**
    * returns all entityId that contain the following component
    */

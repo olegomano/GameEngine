@@ -31,13 +31,16 @@ static int LuaApi_test(lua_State* lua){
 static int LuaApi_addComponent(lua_State* lua){
   LuaApi_FunctionCall callInfo;
   getLuaCallInfo(lua,callInfo);
-  std::string type = callInfo.params["type"];
-  if(type == "rect"){
-    
-  }else if(type == "cube"){
 
+  std::string type = callInfo.params["type"];
+  lua::LuaVar var;
+  if(type == "rect"){
+    var = callInfo.context->createPrimitive(render::primitive::Rect);   
+  }else if(type == "cube"){
+    var = callInfo.context->createPrimitive(render::primitive::Cube);
   }
-  return 0;
+  var.load();
+  return 1;
 }
 
 static int LuaApi_createWindow(lua_State* lua){ 
@@ -80,8 +83,7 @@ static int LuaApi_registerEventHandler(lua_State* lua){
 
   std::string event = callInfo.params["event"];
   lua::FunctionHandle handler = callInfo.params["handler"];
-    
-  
+     
   callInfo.context->addLuaEventHandler(event,handler);
   //lua_rawgeti(lua, LUA_REGISTRYINDEX, handler);
   //lua_pcall(lua, 0, 0, 0);

@@ -5,6 +5,7 @@
 #include <file.h>
 #define LOG_TAG "Context"
 
+
 Context::Context(){
   //m_glContext.setContextCallback(std::bind(&Context::onGLContextInit,this));
 }
@@ -62,13 +63,13 @@ void Context::initRendering(uint32_t screenW, uint32_t screenH, float renderScal
 void Context::addLuaEventHandler(const std::string& event, const lua::FunctionHandle& h){
   cprint_debug(LOG_TAG) << "Adding Handler for event " << event << std::endl;
   if(event == "frame"){
-    m_luaHandlers.frameHandlers.push_back(h);
+    m_luaHandlers.frameHandlers.push_back(lua::LuaVar(&m_luaContext,h));
   }
   else if(event == "key"){
-    m_luaHandlers.keyboardHandlers.push_back(h);
+    m_luaHandlers.keyboardHandlers.push_back(lua::LuaVar(&m_luaContext,h));
   }
   else if(event == "entity"){
-    m_luaHandlers.entityCreationHandlers.push_back(h);
+    m_luaHandlers.entityCreationHandlers.push_back(lua::LuaVar(&m_luaContext,h));
   }else{
     cprint_debug(LOG_TAG) << "Unknown event type " << event << std::endl;
   }
@@ -82,36 +83,50 @@ void Context::onGLContextInit(){
 void Context::handleEntityCreatedEvent(uint64_t eventId, void* ptr){
   render::scene::Entity entity = *((render::scene::Entity*)ptr);
   uint32_t index = -1;
-
-  if(eventId == render::scene::Events::ENTITY_CREATED){
-    cprint_debug(LOG_TAG) << "Entity Created " << eventId << " " << entity.entityId() << std::endl; 
-    entity.foreachComponent(
-      [&](render::scene::Component c, void* ptr) mutable {
-      switch(c){    
-      
-      case render::scene::Component::Drawable:{
-    
-      }break;
-      case render::scene::Component::Camera:{
-        cprint_debug(LOG_TAG) << "Creating Lua Camera " << std::endl;
-
-        render::ICamera* c = (render::ICamera*) ptr;
-        Transform t = entity.getComponent<Transform>(); 
-        lua::LuaVar transformVar = m_luaContext.createVar<Transform>(false);
-        transformVar.write(t);
-        m_luaContext.load(render::scene::descriptor<render::scene::Component::Camera>().name);
-        transformVar.load();
-        index = lua::append_list(m_luaContext.lua(),true);
-        m_luaEntities.push_back( std::make_tuple(transformVar,entity) );
-
-      }break;
-        
-      default:
-      break; 
-      }
-    
-    }); 
+  if(eventId != render::scene::Events::ENTITY_CREATED){
+    return;
   }
+  lua::LuaVar var;
+  cprint_debug(LOG_TAG) << "Entity Created " << eventId << " " << entity.entityId() <<  " " << entity.contextId() << std::endl; 
+  if(m_luaEntityContextMap.count(entity.contextId())){
+    var = m_luaEntityContextMap[entity.contextId()];
+    m_luaEntityContextMap.erase(entity.contextId());
+  }
+  else{
+    var = m_luaContext.createVar<lua::FlatTable>();
+  }
+  
+  var.write( entity.getComponent<Transform>() );
+  m_luaEntities.push_back( std::make_tuple(var,entity) );
+  
+  entity.foreachComponent(
+    [&](render::scene::Component c, void* ptr) mutable {
+    switch(c){    
+      
+    case render::scene::Component::Drawable:{
+      render::IDrawable* d = (render::IDrawable*) ptr; 
+      cprint_debug(LOG_TAG) << "Creating Lua Drawable " << std::endl;
+      var.write(d);
+      
+      m_luaContext.load(render::scene::descriptor<render::scene::Component::Drawable>().name);
+      var.load();
+      lua::append_list(m_luaContext.lua(),true);
+    }break;
+    case render::scene::Component::Camera:{
+      render::ICamera* c = (render::ICamera*) ptr;
+      cprint_debug(LOG_TAG) << "Creating Lua Camera " << std::endl;
+      var.write(c);
+
+      m_luaContext.load(render::scene::descriptor<render::scene::Component::Camera>().name);
+      var.load();
+      lua::append_list(m_luaContext.lua(),true);
+    }break;
+        
+    default:
+    break; 
+    }
+  });
+
 }
 
 void Context::loadLuaFile(const std::string& name){
@@ -148,6 +163,17 @@ void Context::createWindow(const std::string& name, uint32_t w, uint32_t h){
   **/  
 }
 
+/**
+ *
+ */
+lua::LuaVar Context::createPrimitive(render::primitive::Type t){
+  uint32_t contextId = m_luaEntityContextId++;
+  render::scene::Entity e = m_glRenderContext->createPrimitive(t,contextId);
+  lua::LuaVar luaEntity = m_luaContext.createVar<lua::FlatTable>();
+  m_luaEntityContextMap[contextId] = luaEntity;
+  return luaEntity;
+}
+
 void Context::loopForever(){
   while(!m_isRenderInit){
     std::this_thread::sleep_for(std::chrono::milliseconds(16));
@@ -157,43 +183,32 @@ void Context::loopForever(){
 
   cprint_debug(LOG_TAG) << "Game Loop Started" << std::endl;
 
-  std::vector<render::scene::Entity> e;
-
-  int w = 6;
-  int h = 6;
-  for(int x =0 ; x < w; x++){
-    for(int y = 0; y < h; y++){
-      render::scene::Entity k = m_glRenderContext->createPrimitive(render::primitive::Cube);
-      //k.getComponent<Transform>().scale(1);
-      k.getComponent<Transform>().setPosition(x,y,2);
-      e.push_back(k);
-    }
-  }
 
   while(m_running){
     ++m_frame;
-    for(auto& a : e){
-      a.getComponent<Transform>().rotate(0,1,0,.012f);
-      //a.getComponent<Transform>().setPositionZ(sin(m_frame/10.0f));
-    }
     m_tasks.run();  
     m_glRenderContext->handleEvents(); 
     
     for(const auto& iter : m_luaHandlers.frameHandlers){
-      m_luaContext.call(iter);
-
+      iter.call();
     }
-
+    m_windowManager.handleInput([&](const SDL_Event& event){
+      //cprint_debug(LOG_TAG) << event.key << std::endl; 
+      std::string keyname = std::string( SDL_GetKeyName( event.key.keysym.sym ) );
+      for(const auto& iter : m_luaHandlers.keyboardHandlers){
+        iter.call(keyname);
+      }
+    });
+    
     for(const auto& iter : m_luaEntities){
       const lua::LuaVar& var = std::get<0>(iter);
       render::scene::Entity entity = std::get<1>(iter);
       var.read(entity.getComponent<Transform>());
-    }
-  
+    } 
+    
     /**
      * Draws every camera to a texture
      */
-    
     m_glRenderContext->render();
     
     for(auto& window : m_windowManager.windows()){ 

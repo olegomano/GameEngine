@@ -13,8 +13,8 @@ class IRenderContext{
 public:
   virtual void create() = 0;
   virtual void render() = 0;
-  virtual scene::Entity createPrimitive(render::primitive::Type t) = 0;
-  virtual scene::Entity createCamera(uint32_t w, uint32_t h) = 0;
+  virtual scene::Entity createPrimitive(render::primitive::Type t,uint32_t contextId = -1) = 0;
+  virtual scene::Entity createCamera(uint32_t w, uint32_t h,uint32_t contextId = -1) = 0;
   virtual void addEventListener(core::eventbus::Listener l) = 0;  
   virtual void handleEvents() = 0;
 };
@@ -49,18 +49,18 @@ public:
   }
 
 
-  scene::Entity createPrimitive(render::primitive::Type t) override {
+  scene::Entity createPrimitive(render::primitive::Type t, uint32_t contextId = -1) override {
     cprint_debug("rcontext") << "Creating Primitive " << t << std::endl;
     std::initializer_list<scene::Component> components = {scene::Drawable,scene::Transform};
-    scene::Entity e = m_scene.createEntity(components);
+    scene::Entity e = m_scene.createEntity(components,contextId);
     m_primitives.newPrimitive(t,(_T_Drawable&)e.getComponent<IDrawable>());
     return e;
   }
 
-  scene::Entity createCamera(uint32_t w, uint32_t h) override {
+  scene::Entity createCamera(uint32_t w, uint32_t h, uint32_t contextId = -1) override {
     cprint_debug("rcontext") << "Creating Camera " << std::endl;
     std::initializer_list<scene::Component> components = {scene::Camera,scene::Transform};
-    scene::Entity e = m_scene.createEntity(components);
+    scene::Entity e = m_scene.createEntity(components,contextId);
     e.getComponent<ICamera>().create(w,h);
     return e;
   }

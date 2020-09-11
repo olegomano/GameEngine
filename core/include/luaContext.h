@@ -23,11 +23,12 @@ struct FunctionHandle{
   FunctionHandle(uint32_t t){
     value = t;
   }
+  
   FunctionHandle(const FunctionHandle& o){
     value = o.value;
   }
 
-  operator uint32_t(){
+  operator uint32_t() const{
     return value;
   }
 
@@ -175,6 +176,14 @@ class LuaContext;
 
 class LuaVar{
 public:
+  enum Scope{
+    Local,
+    Global
+  };
+  enum Type{
+    Data,
+    Function
+  };
   friend std::ostream& operator<<(std::ostream& out, const LuaVar& var){
     out << (void*)(var.m_context) << " " << var.m_ref;
     return out;
@@ -184,31 +193,42 @@ public:
   LuaVar(const LuaVar& other){
     m_context = other.m_context;
     m_ref     = other.m_ref;
-    m_global  = other.m_global;
+    m_scope   = other.m_scope;
+    m_type    = other.m_type;
   }
   
   LuaVar(const LuaVar&& other){
     m_context = other.m_context;
     m_ref     = other.m_ref;
-    m_global  = other.m_global;
+    m_scope   = other.m_scope;
+    m_type    = other.m_type;
   }
   
   LuaVar& operator=(const LuaVar& other){
     m_ref = other.m_ref;
     m_context = other.m_context;
-    m_global  = other.m_global;
+    m_scope   = other.m_scope;
+    m_type    = other.m_type;
     return *this;
   }
 
-  LuaVar(LuaContext* context,uint32_t ref,bool global){
+  LuaVar(LuaContext* context,uint32_t ref, Scope s = Scope::Local){
     m_context = context;
     m_ref     = ref;
-    m_global  = global;
+    m_scope   = s;
+    m_type    = Type::Data;
+  }
+
+  LuaVar(LuaContext* context, const FunctionHandle& handle, Scope s = Scope::Local){
+    m_context = context;
+    m_ref     = handle;
+    m_scope   = s;
+    m_type    = Type::Function;
   }
 
   uint32_t index() const {return m_ref;}
- 
-  bool isGlobal() {return m_global;}
+  bool isGlobal() const {return m_scope == Scope::Global;}
+  bool isData() const {return m_type == Type::Data;}
 
   template<typename T>
   void write(const T& data) const;
@@ -218,12 +238,14 @@ public:
   
   void load() const;
   
-  void call() const; 
+  template<typename... T>
+  void call(T&&... args) const; 
 
 private:
   LuaContext* m_context = nullptr;
   uint32_t    m_ref     = -1;
-  bool        m_global  = false;
+  Scope       m_scope   = Scope::Local;
+  Type        m_type    = Type::Data;
 };
 
 class LuaContext{
@@ -249,6 +271,7 @@ public:
     case 0:
       if(lua_pcall(m_lua,0,0,0)){
         out << lua_tostring(m_lua,-1) << std::endl;
+        lua_pop(m_lua, -1);
         return false;
       }
       return true;
@@ -291,34 +314,28 @@ public:
   * leaves it at the top of the stack
   */
   template<typename T>
-  LuaVar createVar(bool global, const std::string& globalName = ""){
+  LuaVar createVar(bool global = false, const std::string& globalName = ""){
     if(global){
       cprint_debug("Lua") << "Creating global variable " << globalName << std::endl;
     }
     uint32_t indx = -1;
     const std::string& table = global ? _GLOBAL_TABLE : _INDEX_TABLE;
-    
-    std::cout << "createVar::start" <<std::endl;
-    stackDump(m_lua);
-
+  
     lua_getglobal(m_lua,table.c_str());
     allocate<T>();
     indx = append_list(m_lua);
 
-    LuaVar var = LuaVar(this,indx,global);
- 
+    LuaVar var;
     if(global){
+      var = LuaVar(this,indx,LuaVar::Scope::Global);
       lua_rawgeti(m_lua,-1,indx);
       lua_setglobal(m_lua,globalName.c_str());
       m_globalVars.push_back(var);
     }else{
+      var = LuaVar(this,indx);
       m_allVars.push_back(var);
     }
     lua_pop(m_lua,1);
-
-    std::cout << "createVar::end " << indx << std::endl;
-    stackDump(m_lua);
-
     return var;
   }
 
@@ -340,18 +357,21 @@ public:
       push_struct(m_lua,data);
     }
     lua_pop(m_lua,1);
-    stackDump(m_lua);
   }
 
   /*
    * puts var at top of lua stack
    */
   void load(LuaVar var) const {
-    const std::string& table = var.isGlobal() ? _GLOBAL_TABLE : _INDEX_TABLE;
-    lua_getglobal(m_lua,table.c_str());
-    lua_pushnumber(m_lua,var.index()); //todo replace with get_list_item
-    lua_gettable(m_lua,-2); 
-    lua_remove(m_lua,-2);
+    if(var.isData()){
+      const std::string& table = var.isGlobal() ? _GLOBAL_TABLE : _INDEX_TABLE;
+      lua_getglobal(m_lua,table.c_str());
+      lua_pushnumber(m_lua,var.index()); //todo replace with get_list_item
+      lua_gettable(m_lua,-2); 
+      lua_remove(m_lua,-2);
+    }else{
+      lua_rawgeti(m_lua, LUA_REGISTRYINDEX, var.index());
+    }
   }
   
   /**
@@ -364,7 +384,7 @@ public:
   /*
    * puts a global with name on top of the stack
    */
-  void load(const std::string& globalName){
+  void load(const std::string& globalName) const {
     lua_getglobal(m_lua,globalName.c_str());
   }
 
@@ -373,10 +393,10 @@ public:
     load(handle);
     lua_pcall(m_lua,0,0,0);
   }
-  
+ 
   uint32_t id() const;
   
-  lua_State* lua() {return m_lua;}
+  lua_State* lua() const {return m_lua;}
 private:
   lua_State*                   m_lua;
   uint32_t                     m_id;
@@ -386,7 +406,7 @@ private:
 
 
 template<typename T>
-inline void LuaVar::write(const T& data) const{
+inline void LuaVar::write(const T& data) const {
   assert(m_context != nullptr);
   m_context->write(*this,data);
 }
@@ -402,9 +422,21 @@ inline void LuaVar::load() const {
   m_context->load(*this);
 };
 
-inline void LuaVar::call() const{
+template<typename... T>
+inline void LuaVar::call(T&&... args) const {
+  //std::make_tuple(push_struct(m_context->lua(),args)...);
+  if(m_type != Type::Function){
+    cprint_error(LOG_TAG) << "Failed to call LuaVar, not a function" << std::endl;
+    return;
+  }
+  
   m_context->load(*this);
-  lua_pcall(m_context->lua(),0,0,0);
+  ( push_struct( m_context->lua(),std::forward<T>(args) ) , ... ); 
+  //stackDump(m_context->lua());
+  if( lua_pcall(m_context->lua(),sizeof...(args),0,0) ){
+    cprint_error(LOG_TAG) << "Failed to call LuaVar as function: " << lua_tostring(m_context->lua(),-1) << std::endl;
+    lua_pop(m_context->lua(), -1);
+  }
 }; 
 
 }

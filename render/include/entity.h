@@ -16,7 +16,7 @@ class Entity{
 public:
   friend IAbstractScene;
   Entity();
-  Entity(uint64_t globalId,IAbstractScene* owner);
+  Entity(uint64_t globalId,uint32_t contextId,IAbstractScene* owner);
   Entity(const Entity& other);
   Entity& operator=(const Entity& other);
 
@@ -35,11 +35,16 @@ public:
 
   bool hasComponent(Component c) const;
   uint32_t entityId() const;
+  uint32_t contextId() const;
   void addTag(const std::string& t){}
 
 private:
   /* low bits are entity id high bits are mask for added components*/
   uint64_t m_globalId = -1;
+  /* id passed along from creation point for exernal use
+    usefull if a derived system does deferred initializaion 
+  */
+  uint32_t m_contextId = -1;
   IAbstractScene* m_owner = nullptr;
 };
 

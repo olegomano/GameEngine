@@ -11,19 +11,22 @@ Entity::Entity(){
   m_owner = nullptr;
 }
 
-Entity:: Entity(uint64_t globalId,IAbstractScene* owner){
+Entity:: Entity(uint64_t globalId,uint32_t contextId,IAbstractScene* owner){
   m_globalId = globalId;
   m_owner = owner;
+  m_contextId = contextId;
 }
 
 Entity::Entity(const Entity& other){
   m_globalId = other.m_globalId;
   m_owner = other.m_owner;
+  m_contextId = other.m_contextId;
 }
 
 Entity& Entity::operator=(const Entity& other){
   m_globalId = other.m_globalId;
   m_owner = other.m_owner;
+  m_contextId = other.m_contextId;
   return *this;
 }
 
@@ -34,6 +37,11 @@ bool Entity::hasComponent(Component c) const{
 uint32_t Entity::entityId() const {
   return entityIdFromGlobalId(m_globalId);
 }
+
+uint32_t Entity::contextId() const {
+  return m_contextId;
+}
+
 
 template<>
 ICamera& Entity::getComponent<ICamera>(){

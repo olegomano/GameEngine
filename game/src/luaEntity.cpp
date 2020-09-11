@@ -25,6 +25,18 @@ void lua::read_struct<render::ICamera*>(lua_State* lua, render::ICamera*& a){
 }
 
 template<>
+int lua::push_struct<render::IDrawable*>(lua_State* lua, render::IDrawable* const & a){  
+  return 1;
+}
+
+template<>
+void lua::read_struct<render::IDrawable*>(lua_State* lua, render::IDrawable*& a){
+
+}
+
+
+
+template<>
 int lua::push_struct<Transform>(lua_State* lua, const Transform& t){
   lua::FlatTable table;
   table["x"] = t.positionX();

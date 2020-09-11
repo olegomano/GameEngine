@@ -24,9 +24,9 @@ public:
    * Lists of lua Event Handlers
    */
   struct LuaHandlers{
-    std::vector<lua::FunctionHandle> frameHandlers;
-    std::vector<lua::FunctionHandle> entityCreationHandlers;
-    std::vector<lua::FunctionHandle> keyboardHandlers;
+    std::vector<lua::LuaVar> frameHandlers;
+    std::vector<lua::LuaVar> entityCreationHandlers;
+    std::vector<lua::LuaVar> keyboardHandlers;
   };
 
   Context();
@@ -61,7 +61,7 @@ public:
   /**
    *
    */
-  void createPrimitive();
+  lua::LuaVar createPrimitive(render::primitive::Type t);
 
   /*
    * Loads and executes a file containing a lua script
@@ -105,6 +105,8 @@ private:
   
   core::task_que::TaskQue<std::function<void()>>     m_tasks;
   std::vector<std::tuple<lua::LuaVar,render::scene::Entity>> m_luaEntities;
+  std::unordered_map<uint32_t,lua::LuaVar>          m_luaEntityContextMap;
+  uint32_t                                          m_luaEntityContextId = 0;
   LuaHandlers                                       m_luaHandlers;
 
   bool m_isRenderInit = false;
