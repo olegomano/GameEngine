@@ -16,3 +16,6 @@
 [submodule "3rdparty/lua/lua"]
 	path = 3rdparty/lua/lua
 	url = git@github.com:lua/lua.git
+[submodule "3rdparty/assimp"]
+	path = 3rdparty/assimp
+	url = https://github.com/assimp/assimp.git

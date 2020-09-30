@@ -31,7 +31,6 @@ void Context::init(){
     f.load();
     m_luaContext.loadBuffer(f.data(),f.size());
   }
-
 }
 
 

@@ -15,6 +15,7 @@ public:
   virtual void render() = 0;
   virtual scene::Entity createPrimitive(render::primitive::Type t,uint32_t contextId = -1) = 0;
   virtual scene::Entity createCamera(uint32_t w, uint32_t h,uint32_t contextId = -1) = 0;
+  virtual scene::Entity loadCollada(const std::string& collada) = 0;
   virtual void addEventListener(core::eventbus::Listener l) = 0;  
   virtual void handleEvents() = 0;
 };
@@ -48,6 +49,9 @@ public:
     m_scene.eventBus().flush();
   }
 
+  scene::Entity loadCollada(const std::string& collada){
+
+  }
 
   scene::Entity createPrimitive(render::primitive::Type t, uint32_t contextId = -1) override {
     cprint_debug("rcontext") << "Creating Primitive " << t << std::endl;
